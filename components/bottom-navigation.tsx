@@ -38,8 +38,8 @@ export function BottomNavigation() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
-      <div className="flex items-center justify-around px-2 py-2 max-w-md mx-auto">
+    <div className="bg-background border-t border-border shrink-0">
+      <div className="flex items-center justify-around px-2 py-2">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -59,7 +59,7 @@ export function BottomNavigation() {
             >
               <Icon
                 className={cn(
-                  "h-5 w-5 transition-colors duration-200",
+                  "h-4 w-4 transition-colors duration-200",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               />

@@ -1,35 +1,40 @@
+import { DashboardHeader } from "@/components/dashboard-header";
+import { AddMealModal } from "@/components/modals/add-meal-modal";
+import { LogWeightModal } from "@/components/modals/log-weight-modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Scale, Utensils } from "lucide-react";
 
 export default function LogsPage() {
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Logs</h1>
-          <p className="text-muted-foreground">
-            Track your meals and weight progress
-          </p>
-        </div>
+    <div className="h-full flex flex-col">
+      {/* Header - fixed */}
+      <div className="px-4 py-3 border-b bg-background/95 backdrop-blur">
+        <DashboardHeader 
+          title="Logs" 
+          description="Track meals and weight" 
+        />
+      </div>
 
-        <Tabs defaultValue="meals" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="meals" className="flex items-center gap-2">
-              <Utensils className="h-4 w-4" />
-              Meal Logs
-            </TabsTrigger>
-            <TabsTrigger value="weight" className="flex items-center gap-2">
-              <Scale className="h-4 w-4" />
-              Weight Logs
-            </TabsTrigger>
-          </TabsList>
+      {/* Content - scrollable */}
+      <div className="flex-1 overflow-auto">
+        <Tabs defaultValue="meals" className="h-full flex flex-col">
+          <div className="px-4 py-2 border-b">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="meals" className="flex items-center gap-1 text-xs">
+                <Utensils className="h-3 w-3" />
+                Meals
+              </TabsTrigger>
+              <TabsTrigger value="weight" className="flex items-center gap-1 text-xs">
+                <Scale className="h-3 w-3" />
+                Weight
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="meals" className="space-y-4">
+          <TabsContent value="meals" className="flex-1 overflow-auto p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Meal History</h2>
-              <button className="text-sm text-primary hover:underline">
-                Add New Meal
-              </button>
+              <h3 className="text-sm font-semibold">Meal History</h3>
+              <AddMealModal />
             </div>
 
             <div className="space-y-3">
@@ -68,12 +73,10 @@ export default function LogsPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="weight" className="space-y-4">
+          <TabsContent value="weight" className="flex-1 overflow-auto p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Weight Progress</h2>
-              <button className="text-sm text-primary hover:underline">
-                Log Weight
-              </button>
+              <h3 className="text-sm font-semibold">Weight Progress</h3>
+              <LogWeightModal />
             </div>
 
             <div className="space-y-3">

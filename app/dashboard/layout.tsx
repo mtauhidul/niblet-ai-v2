@@ -6,11 +6,13 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Main content area with bottom padding for navigation */}
-      <main className="pb-16">{children}</main>
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* Main content area - takes remaining space */}
+      <main className="flex-1 overflow-hidden">
+        {children}
+      </main>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - fixed height */}
       <BottomNavigation />
     </div>
   );

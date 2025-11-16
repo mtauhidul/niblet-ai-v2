@@ -2,6 +2,7 @@
 
 import ChatInput from "@/components/chat-input";
 import { ChatView } from "@/components/chat-view";
+import { DashboardHeader } from "@/components/dashboard-header";
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
 
@@ -82,25 +83,39 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome to your health and fitness dashboard
-          </p>
+    <div className="h-full flex flex-col">
+      {/* Header - fixed height */}
+      <div className="px-4 py-3 border-b bg-background/95 backdrop-blur">
+        <DashboardHeader 
+          title="Dashboard" 
+          description="Your health journey at a glance" 
+        />
+      </div>
+
+      {/* Main content - flexible height */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Progress Overview - compact */}
+        <div className="px-4 py-3 border-b bg-background">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold">Progress</h3>
+            <span className="text-xs text-muted-foreground">70% to goal</span>
+          </div>
+          <Progress value={70} className="h-2" />
         </div>
 
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">Progress Overview</h2>
-          <Progress value={70} className="w-full" />
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">AI Assistant</h2>
-          <ChatView messages={messages} isLoading={isLoading} />
-          <ChatInput onSendMessage={handleSendMessage} />
-        </section>
+        {/* Chat Section - takes remaining space */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="px-4 py-2 border-b">
+            <h3 className="text-sm font-semibold">AI Assistant</h3>
+          </div>
+          
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-hidden">
+              <ChatView messages={messages} isLoading={isLoading} />
+            </div>
+            <ChatInput onSendMessage={handleSendMessage} disabled={isLoading} />
+          </div>
+        </div>
       </div>
     </div>
   );

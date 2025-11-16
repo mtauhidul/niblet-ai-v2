@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardHeaderWithActions } from "@/components/dashboard-header-with-actions";
 import {
   Activity,
   Calendar,
@@ -127,58 +128,61 @@ export default function ChartPage() {
   const weightToGo = latestWeight - targetWeight;
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-            <p className="text-muted-foreground">
-              Track your progress with comprehensive insights and trends
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <Select
-              value={selectedTimeframe}
-              onValueChange={(value: keyof typeof chartDatasets) =>
-                setSelectedTimeframe(value)
-              }
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Select timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(timeframeLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+    <div className="h-full flex flex-col">
+      {/* Header - fixed */}
+      <div className="px-4 py-3 border-b bg-background/95 backdrop-blur">
+        <DashboardHeaderWithActions 
+          title="Analytics" 
+          description="Progress insights and trends"
+          actions={
+            <>
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <Select
+                value={selectedTimeframe}
+                onValueChange={(value: keyof typeof chartDatasets) =>
+                  setSelectedTimeframe(value)
+                }
+              >
+                <SelectTrigger className="w-24 h-7 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(timeframeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key} className="text-xs">
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          }
+        />
+      </div>
+
+      {/* Content - scrollable */}
+      <div className="flex-1 overflow-auto p-4 space-y-4">
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 grid-cols-2">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Current Weight
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+              <CardTitle className="text-xs font-medium">
+                Current
               </CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <Activity className="h-3 w-3 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{latestWeight} kg</div>
+            <CardContent className="pb-2 px-3">
+              <div className="text-lg font-bold">{latestWeight} kg</div>
               <p className="text-xs text-muted-foreground">
                 {weightChange < 0 ? (
                   <span className="text-green-600 flex items-center gap-1">
-                    <TrendingDown className="h-3 w-3" />
-                    {Math.abs(weightChange).toFixed(1)} kg lost
+                    <TrendingDown className="h-2 w-2" />
+                    {Math.abs(weightChange).toFixed(1)} kg ↓
                   </span>
                 ) : (
                   <span className="text-red-600 flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" />
-                    {weightChange.toFixed(1)} kg gained
+                    <TrendingUp className="h-2 w-2" />
+                    {weightChange.toFixed(1)} kg ↑
                   </span>
                 )}
               </p>
@@ -186,14 +190,14 @@ export default function ChartPage() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Target Weight
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+              <CardTitle className="text-xs font-medium">
+                Target
               </CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
+              <Target className="h-3 w-3 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{targetWeight} kg</div>
+            <CardContent className="pb-2 px-3">
+              <div className="text-lg font-bold">{targetWeight} kg</div>
               <p className="text-xs text-muted-foreground">
                 {weightToGo > 0
                   ? `${weightToGo.toFixed(1)} kg to go`
@@ -203,27 +207,27 @@ export default function ChartPage() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Avg Daily Calories
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+              <CardTitle className="text-xs font-medium">
+                Avg Calories
               </CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <Activity className="h-3 w-3 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{avgCalories}</div>
+            <CardContent className="pb-2 px-3">
+              <div className="text-lg font-bold">{avgCalories}</div>
               <p className="text-xs text-muted-foreground">
-                {timeframeLabels[selectedTimeframe]} average
+                daily average
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Progress</CardTitle>
-              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+              <CardTitle className="text-xs font-medium">Progress</CardTitle>
+              <TrendingDown className="h-3 w-3 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="pb-2 px-3">
+              <div className="text-lg font-bold">
                 {Math.round(
                   ((earliestWeight - latestWeight) /
                     (earliestWeight - targetWeight)) *
@@ -232,7 +236,7 @@ export default function ChartPage() {
                 %
               </div>
               <p className="text-xs text-muted-foreground">
-                Towards target weight
+                to target
               </p>
             </CardContent>
           </Card>
@@ -240,25 +244,24 @@ export default function ChartPage() {
 
         {/* Combined Progress Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle>
-              Progress Overview - {timeframeLabels[selectedTimeframe]}
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">
+              Progress Overview
             </CardTitle>
-            <CardDescription>
-              Track your weight progress, target goal, and daily calories over{" "}
-              {timeframeLabels[selectedTimeframe].toLowerCase()}
+            <CardDescription className="text-xs">
+              Weight & calories for {timeframeLabels[selectedTimeframe].toLowerCase()}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={combinedChartConfig}>
+          <CardContent className="p-3">
+            <ChartContainer config={combinedChartConfig} className="h-52 w-full">
               <LineChart
                 accessibilityLayer
                 data={chartData}
                 margin={{
-                  left: 12,
-                  right: 12,
-                  top: 12,
-                  bottom: 12,
+                  left: 8,
+                  right: 8,
+                  top: 8,
+                  bottom: 8,
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
@@ -266,7 +269,10 @@ export default function ChartPage() {
                   dataKey="date"
                   tickLine={false}
                   axisLine={false}
-                  tickMargin={8}
+                  tickMargin={4}
+                  fontSize={10}
+                  height={40}
+                  interval="preserveStartEnd"
                   tickFormatter={(value) => {
                     return new Date(value).toLocaleDateString("en-US", {
                       month: "short",
@@ -279,26 +285,20 @@ export default function ChartPage() {
                   orientation="left"
                   tickLine={false}
                   axisLine={false}
-                  tickMargin={8}
+                  tickMargin={4}
+                  width={35}
                   domain={["dataMin - 2", "dataMax + 1"]}
-                  label={{
-                    value: "Weight (kg)",
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
+                  fontSize={10}
                 />
                 <YAxis
                   yAxisId="calories"
                   orientation="right"
                   tickLine={false}
                   axisLine={false}
-                  tickMargin={8}
+                  tickMargin={4}
+                  width={40}
                   domain={[1500, 2500]}
-                  label={{
-                    value: "Calories",
-                    angle: 90,
-                    position: "insideRight",
-                  }}
+                  fontSize={10}
                 />
                 <ChartTooltip cursor={true} content={<ChartTooltipContent />} />
 

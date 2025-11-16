@@ -1,35 +1,40 @@
+import { DashboardHeader } from "@/components/dashboard-header";
+import { EditProfileModal } from "@/components/modals/edit-profile-modal";
+import { UpdateGoalsModal } from "@/components/modals/update-goals-modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Info, Settings, Target, User } from "lucide-react";
 
 export default function ProfilePage() {
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-          <p className="text-muted-foreground">
-            Manage your profile and set your goals
-          </p>
-        </div>
+    <div className="h-full flex flex-col">
+      {/* Header - fixed */}
+      <div className="px-4 py-3 border-b bg-background/95 backdrop-blur">
+        <DashboardHeader 
+          title="Profile" 
+          description="Manage your profile and goals" 
+        />
+      </div>
 
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              User Profile
-            </TabsTrigger>
-            <TabsTrigger value="goals" className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Goal Setup
-            </TabsTrigger>
-          </TabsList>
+      {/* Content - scrollable */}
+      <div className="flex-1 overflow-auto">
+        <Tabs defaultValue="profile" className="h-full flex flex-col">
+          <div className="px-4 py-2 border-b">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="profile" className="flex items-center gap-1 text-xs">
+                <User className="h-3 w-3" />
+                Profile
+              </TabsTrigger>
+              <TabsTrigger value="goals" className="flex items-center gap-1 text-xs">
+                <Target className="h-3 w-3" />
+                Goals
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="profile" className="space-y-4">
+          <TabsContent value="profile" className="flex-1 overflow-auto p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Personal Information</h2>
-              <button className="text-sm text-primary hover:underline">
-                Edit Profile
-              </button>
+              <h3 className="text-sm font-semibold">Personal Information</h3>
+              <EditProfileModal />
             </div>
 
             <div className="space-y-4">
@@ -135,12 +140,10 @@ export default function ProfilePage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="goals" className="space-y-4">
+          <TabsContent value="goals" className="flex-1 overflow-auto p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Health & Fitness Goals</h2>
-              <button className="text-sm text-primary hover:underline">
-                Update Goals
-              </button>
+              <h3 className="text-sm font-semibold">Health & Fitness Goals</h3>
+              <UpdateGoalsModal />
             </div>
 
             <div className="space-y-4">
