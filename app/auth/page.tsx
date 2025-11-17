@@ -1,15 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+
+const getTimeBasedGreeting = (userName: string) => {
+  const hour = new Date().getHours();
+  let timeOfDay = '';
+  
+  if (hour < 12) {
+    timeOfDay = 'Good morning';
+  } else if (hour < 17) {
+    timeOfDay = 'Good afternoon';
+  } else {
+    timeOfDay = 'Good evening';
+  }
+  
+  return `${timeOfDay}, ${userName}! Welcome back to your health journey.`;
+};
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { user, userProfile, signInWithGoogle } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already authenticated and show personalized greeting  
+  useEffect(() => {
+    if (user && userProfile) {
+      // Show personalized greeting
+      const greeting = getTimeBasedGreeting(userProfile.firstName || 'there');
+      toast.success(greeting);
+      
+      if (!userProfile.isOnboardingComplete) {
+        router.push('/onboarding');
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, userProfile, router]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      await signInWithGoogle();
+      // We'll show the personalized greeting when the user profile loads
+      // Don't redirect here - let useEffect handle it based on onboarding status
+    } catch (error) {
+      console.error('Sign in error:', error);
+      toast.error('Failed to sign in. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <nav className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -41,10 +92,8 @@ export default function AuthPage() {
               <Button 
                 variant="outline" 
                 className="w-full h-12 text-base"
-                onClick={() => {
-                  // TODO: Implement Google OAuth
-                  console.log("Google sign in clicked");
-                }}
+                onClick={handleGoogleSignIn}
+                disabled={loading}
               >
                 <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
                   <path

@@ -22,6 +22,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { useUserData } from "@/contexts/UserContext";
+import { toast } from "sonner";
 
 interface MealData {
   mealName: string;
@@ -37,6 +39,8 @@ interface MealData {
 
 export function AddMealModal() {
   const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { addMealLog } = useUserData();
   const [mealData, setMealData] = useState<MealData>({
     mealName: "",
     mealType: "",
@@ -49,12 +53,56 @@ export function AddMealModal() {
     notes: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Meal data:", mealData);
-    // TODO: Save to Firestore
-    setOpen(false);
-    resetForm();
+    
+    // Validate required fields
+    if (!mealData.mealName || !mealData.mealType) {
+      toast.error("Please fill in meal name and type");
+      return;
+    }
+
+    const amount = parseFloat(mealData.amount);
+    const calories = parseFloat(mealData.calories);
+    const protein = parseFloat(mealData.protein);
+    const carbs = parseFloat(mealData.carbs);
+    const fat = parseFloat(mealData.fat);
+
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if (isNaN(calories) || calories < 0) {
+      toast.error("Please enter valid calories");
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      await addMealLog({
+        mealName: mealData.mealName,
+        mealType: mealData.mealType as 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other',
+        amount,
+        unit: mealData.unit as 'g' | 'ml' | 'oz' | 'cup' | 'piece' | 'serving',
+        calories,
+        protein: isNaN(protein) ? 0 : protein,
+        carbohydrates: isNaN(carbs) ? 0 : carbs,
+        fat: isNaN(fat) ? 0 : fat,
+        notes: mealData.notes || undefined,
+        consumedAt: new Date(),
+      });
+      
+      toast.success("Meal logged successfully!");
+      setOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error("Error logging meal:", error);
+      toast.error("Failed to log meal");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const resetForm = () => {
@@ -222,10 +270,13 @@ export function AddMealModal() {
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit">Log Meal</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Logging..." : "Log Meal"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

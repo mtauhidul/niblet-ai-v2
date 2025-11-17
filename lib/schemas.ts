@@ -6,22 +6,29 @@ export interface User {
   displayName?: string;
   photoURL?: string;
   
+  // Onboarding Status
+  isOnboardingComplete: boolean;
+  
   // Basic Profile Info
   firstName: string;
   lastName: string;
   age?: number;
   gender?: 'male' | 'female' | 'other';
   height?: number; // in cm
+  currentWeight?: number; // in kg
+  bmi?: number; // calculated BMI
   activityLevel?: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active';
   
   // Goal Info
-  goalType: 'weight_loss' | 'weight_gain' | 'maintain_weight' | 'muscle_gain';
+  goalType?: 'weight_loss' | 'weight_gain' | 'maintain_weight' | 'muscle_gain';
   targetWeight?: number; // in kg
   targetCalories?: number; // daily calorie goal
   targetProtein?: number; // daily protein goal in grams
   targetCarbs?: number; // daily carbs goal in grams
   targetFat?: number; // daily fat goal in grams
   targetWater?: number; // daily water goal in ml
+  goalTargetDate?: Date; // target date for reaching the goal
+  goalCreatedAt?: Date; // when the goal was set
   
   // Timestamps
   createdAt: Date;

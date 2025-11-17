@@ -20,7 +20,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Edit } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface ProfileData {
   firstName: string;
@@ -33,20 +36,64 @@ interface ProfileData {
 
 export function EditProfileModal() {
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { userProfile, refreshUserProfile } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData>({
-    firstName: "John",
-    lastName: "Doe",
-    age: "28",
-    gender: "male",
-    height: "175",
-    activityLevel: "moderately_active",
+    firstName: "",
+    lastName: "",
+    age: "",
+    gender: "",
+    height: "",
+    activityLevel: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Load user profile data when modal opens or user profile changes
+  useEffect(() => {
+    if (userProfile) {
+      setProfileData({
+        firstName: userProfile.firstName || "",
+        lastName: userProfile.lastName || "",
+        age: userProfile.age?.toString() || "",
+        gender: userProfile.gender || "",
+        height: userProfile.height?.toString() || "",
+        activityLevel: userProfile.activityLevel || "",
+      });
+    }
+  }, [userProfile]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Profile data:", profileData);
-    // TODO: Save to Firestore
-    setOpen(false);
+    if (!userProfile?.id) return;
+
+    setSaving(true);
+    try {
+      const userDoc = doc(db, 'users', userProfile.id);
+      
+      // Calculate BMI if height and current weight are available
+      let bmi = userProfile.bmi;
+      if (profileData.height && userProfile.currentWeight) {
+        const heightInM = parseFloat(profileData.height) / 100;
+        bmi = userProfile.currentWeight / (heightInM * heightInM);
+      }
+
+      await updateDoc(userDoc, {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        age: profileData.age ? parseInt(profileData.age) : null,
+        gender: profileData.gender || null,
+        height: profileData.height ? parseFloat(profileData.height) : null,
+        activityLevel: profileData.activityLevel || null,
+        bmi: bmi,
+        updatedAt: new Date(),
+      });
+
+      await refreshUserProfile();
+      setOpen(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const updateProfileData = (field: keyof ProfileData, value: string) => {
@@ -162,11 +209,12 @@ export function EditProfileModal() {
               variant="outline"
               onClick={() => setOpen(false)}
               className="h-8 text-xs w-full"
+              disabled={saving}
             >
               Cancel
             </Button>
-            <Button type="submit" className="h-8 text-xs w-full">
-              Save Changes
+            <Button type="submit" className="h-8 text-xs w-full" disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>
