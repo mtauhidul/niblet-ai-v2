@@ -187,6 +187,37 @@ export default function ChartPage() {
 
       {/* Content - scrollable */}
       <div className="flex-1 overflow-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+        {/* Getting Started Card - Show when no data */}
+        {chartData.length === 0 && (
+          <Card className="border-dashed border-2 border-muted-foreground/25">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-3">
+                <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Activity className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">Start Your Health Journey</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Begin tracking to see detailed analytics and progress insights
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto">
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="text-2xl mb-1">🍽️</div>
+                    <div className="text-xs font-medium">Log your meals</div>
+                    <div className="text-xs text-muted-foreground">Track calories & nutrition</div>
+                  </div>
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="text-2xl mb-1">⚖️</div>
+                    <div className="text-xs font-medium">Record weight</div>
+                    <div className="text-xs text-muted-foreground">Monitor your progress</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Summary Cards - Responsive grid */}
         <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-4">
           <Card>
@@ -196,21 +227,27 @@ export default function ChartPage() {
             </CardHeader>
             <CardContent className="pb-2 px-2 sm:px-3">
               <div className="text-sm sm:text-lg font-bold">
-                {latestWeight || "--"} kg
+                {latestWeight ? `${latestWeight} kg` : userProfile?.currentWeight ? `${userProfile.currentWeight} kg` : "--"}
               </div>
               <p className="text-xs text-muted-foreground">
-                {weightChange < 0 ? (
-                  <span className="text-green-600 flex items-center gap-1">
-                    <TrendingDown className="h-2 w-2" />
-                    {Math.abs(weightChange).toFixed(1)} kg ↓
-                  </span>
-                ) : weightChange > 0 ? (
-                  <span className="text-red-600 flex items-center gap-1">
-                    <TrendingUp className="h-2 w-2" />
-                    {weightChange.toFixed(1)} kg ↑
-                  </span>
+                {latestWeight ? (
+                  weightChange < 0 ? (
+                    <span className="text-green-600 flex items-center gap-1">
+                      <TrendingDown className="h-2 w-2" />
+                      {Math.abs(weightChange).toFixed(1)} kg ↓
+                    </span>
+                  ) : weightChange > 0 ? (
+                    <span className="text-red-600 flex items-center gap-1">
+                      <TrendingUp className="h-2 w-2" />
+                      {weightChange.toFixed(1)} kg ↑
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">No change</span>
+                  )
                 ) : (
-                  <span className="text-muted-foreground">No change</span>
+                  <span className="text-muted-foreground">
+                    {userProfile?.currentWeight ? "Profile weight" : "No weight logged"}
+                  </span>
                 )}
               </p>
             </CardContent>
@@ -223,12 +260,20 @@ export default function ChartPage() {
             </CardHeader>
             <CardContent className="pb-2 px-2 sm:px-3">
               <div className="text-sm sm:text-lg font-bold">
-                {targetWeight} kg
+                {userProfile?.targetWeight ? `${userProfile.targetWeight} kg` : "--"}
               </div>
               <p className="text-xs text-muted-foreground">
-                {weightToGo > 0
-                  ? `${weightToGo.toFixed(1)} kg to go`
-                  : "Target reached!"}
+                {userProfile?.targetWeight ? (
+                  latestWeight || userProfile.currentWeight ? (
+                    Math.abs(weightToGo) > 0.1
+                      ? `${Math.abs(weightToGo).toFixed(1)} kg to ${weightToGo > 0 ? 'lose' : 'gain'}`
+                      : "Target reached!"
+                  ) : (
+                    "Log weight to track"
+                  )
+                ) : (
+                  "No target set"
+                )}
               </p>
             </CardContent>
           </Card>
@@ -242,9 +287,11 @@ export default function ChartPage() {
             </CardHeader>
             <CardContent className="pb-2 px-2 sm:px-3">
               <div className="text-sm sm:text-lg font-bold">
-                {avgCalories || 0}
+                {avgCalories > 0 ? avgCalories : "--"}
               </div>
-              <p className="text-xs text-muted-foreground">daily average</p>
+              <p className="text-xs text-muted-foreground">
+                {avgCalories > 0 ? "daily average" : "no meals logged"}
+              </p>
             </CardContent>
           </Card>
 
@@ -255,16 +302,23 @@ export default function ChartPage() {
             </CardHeader>
             <CardContent className="pb-2 px-2 sm:px-3">
               <div className="text-sm sm:text-lg font-bold">
-                {earliestWeight && latestWeight && targetWeight
-                  ? Math.round(
-                      ((earliestWeight - latestWeight) /
-                        (earliestWeight - targetWeight)) *
-                        100
-                    )
-                  : 0}
+                {(() => {
+                  if (!userProfile?.targetWeight || !userProfile?.currentWeight) return "--";
+                  
+                  const currentWeight = latestWeight || userProfile.currentWeight;
+                  const startWeight = earliestWeight || userProfile.currentWeight;
+                  const targetWeight = userProfile.targetWeight;
+                  
+                  if (Math.abs(startWeight - targetWeight) < 0.1) return "100"; // Already at target
+                  
+                  const progress = ((startWeight - currentWeight) / (startWeight - targetWeight)) * 100;
+                  return Math.max(0, Math.min(100, Math.round(progress)));
+                })()}
                 %
               </div>
-              <p className="text-xs text-muted-foreground">to target</p>
+              <p className="text-xs text-muted-foreground">
+                {userProfile?.targetWeight ? "to target" : "set target"}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -377,10 +431,22 @@ export default function ChartPage() {
                 </LineChart>
               </ChartContainer>
             ) : (
-              <div className="h-48 sm:h-64 flex items-center justify-center bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  No data available for selected timeframe
+              <div className="h-48 sm:h-64 flex flex-col items-center justify-center bg-muted/50 rounded-lg p-6 text-center">
+                <Activity className="h-8 w-8 text-muted-foreground mb-3" />
+                <p className="text-sm font-medium text-foreground mb-2">
+                  No data available for {timeframeLabels[selectedTimeframe].toLowerCase()}
                 </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Start logging meals and weight to see your progress trends
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 text-xs">
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                    📝 Add meals to track calories
+                  </span>
+                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
+                    ⚖️ Log weight to track progress
+                  </span>
+                </div>
               </div>
             )}
           </CardContent>
@@ -389,26 +455,40 @@ export default function ChartPage() {
               {/* Summary text */}
               <div className="space-y-1">
                 <div className="flex items-center gap-2 font-medium leading-none text-sm">
-                  {weightChange !== 0 ? (
-                    <>
-                      Weight{" "}
-                      {weightChange < 0 ? "trending down" : "trending up"} by{" "}
-                      {Math.abs(weightChange).toFixed(1)} kg
-                      {weightChange < 0 ? (
-                        <TrendingDown className="h-4 w-4" />
-                      ) : (
-                        <TrendingUp className="h-4 w-4" />
-                      )}
-                    </>
+                  {chartData.length > 0 ? (
+                    weightChange !== 0 ? (
+                      <>
+                        Weight{" "}
+                        {weightChange < 0 ? "trending down" : "trending up"} by{" "}
+                        {Math.abs(weightChange).toFixed(1)} kg
+                        {weightChange < 0 ? (
+                          <TrendingDown className="h-4 w-4" />
+                        ) : (
+                          <TrendingUp className="h-4 w-4" />
+                        )}
+                      </>
+                    ) : (
+                      "Weight stable"
+                    )
                   ) : (
-                    "Weight stable"
+                    "Start tracking to see your progress trends"
                   )}
                 </div>
                 <div className="leading-none text-muted-foreground text-xs">
-                  {weightToGo > 0
-                    ? `${weightToGo.toFixed(1)} kg to target`
-                    : "Target weight reached!"}{" "}
-                  • Avg {avgCalories || 0} cal/day
+                  {chartData.length > 0 ? (
+                    <>
+                      {userProfile?.targetWeight && (latestWeight || userProfile.currentWeight) ? (
+                        Math.abs(weightToGo) > 0.1
+                          ? `${Math.abs(weightToGo).toFixed(1)} kg to ${weightToGo > 0 ? 'lose' : 'gain'}`
+                          : "Target weight reached!"
+                      ) : (
+                        "Set a target weight in your goals"
+                      )}{" "}
+                      • Avg {avgCalories || 0} cal/day
+                    </>
+                  ) : (
+                    "Log meals and weight to populate your analytics dashboard"
+                  )}
                 </div>
               </div>
 

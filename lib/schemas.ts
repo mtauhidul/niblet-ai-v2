@@ -19,6 +19,11 @@ export interface User {
   bmi?: number; // calculated BMI
   activityLevel?: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active';
   
+  // Location Info
+  city?: string; // e.g., "Dhaka"
+  country?: string; // e.g., "Bangladesh"
+  timezone?: string; // e.g., "Asia/Dhaka" - auto-detected from location
+  
   // Goal Info
   goalType?: 'weight_loss' | 'weight_gain' | 'maintain_weight' | 'muscle_gain';
   targetWeight?: number; // in kg

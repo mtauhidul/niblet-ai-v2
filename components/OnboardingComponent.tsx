@@ -20,7 +20,14 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateUser } from "@/lib/firestore";
-import { ArrowLeft, ArrowRight, CheckCircle, Target, User } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  MapPin,
+  Target,
+  User,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "sonner";
@@ -37,6 +44,8 @@ interface OnboardingData {
     | "very_active"
     | "extremely_active"
     | "";
+  city: string;
+  country: string;
 }
 
 const activityLevels = [
@@ -91,9 +100,11 @@ export const OnboardingComponent: React.FC = () => {
     height: "",
     currentWeight: "",
     activityLevel: "",
+    city: "",
+    country: "",
   });
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = (currentStep / totalSteps) * 100;
 
   // Calculate BMI whenever height or weight changes
@@ -127,6 +138,8 @@ export const OnboardingComponent: React.FC = () => {
         );
       case 4:
         return data.activityLevel !== "";
+      case 5:
+        return data.city.trim() !== "" && data.country.trim() !== "";
       default:
         return false;
     }
@@ -140,6 +153,9 @@ export const OnboardingComponent: React.FC = () => {
 
     setLoading(true);
     try {
+      // Detect user's timezone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       const updateData = {
         age: Number(data.age),
         gender: data.gender as "male" | "female" | "other",
@@ -152,6 +168,9 @@ export const OnboardingComponent: React.FC = () => {
           | "moderately_active"
           | "very_active"
           | "extremely_active",
+        city: data.city.trim(),
+        country: data.country.trim(),
+        timezone: timezone,
         isOnboardingComplete: true,
       };
 
@@ -343,6 +362,57 @@ export const OnboardingComponent: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <MapPin className="h-12 w-12 mx-auto text-primary mb-4" />
+              <h3 className="text-2xl font-bold">Your Location</h3>
+              <p className="text-muted-foreground">
+                Help us provide better meal suggestions based on local food
+                availability
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  type="text"
+                  placeholder="e.g., Texas"
+                  value={data.city}
+                  onChange={(e) => setData({ ...data, city: e.target.value })}
+                  className="h-12"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  type="text"
+                  placeholder="e.g., USA"
+                  value={data.country}
+                  onChange={(e) =>
+                    setData({ ...data, country: e.target.value })
+                  }
+                  className="h-12"
+                />
+              </div>
+
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  💡 <strong>Why we need this:</strong> Your location helps our
+                  AI suggest meals with locally available ingredients and
+                  calculate nutrition more accurately based on regional food
+                  variations.
+                </p>
+              </div>
             </div>
           </div>
         );

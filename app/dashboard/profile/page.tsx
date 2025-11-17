@@ -126,6 +126,17 @@ export default function ProfilePage() {
                         {userProfile?.gender || 'Not set'}
                       </span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        Location
+                      </span>
+                      <span className="text-sm font-medium">
+                        {userProfile?.city && userProfile?.country 
+                          ? `${userProfile.city}, ${userProfile.country}`
+                          : 'Not set'
+                        }
+                      </span>
+                    </div>
                   </div>
                 </div>
 

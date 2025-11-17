@@ -6,20 +6,46 @@ import { Markdown } from "./ui/markdown";
 import { AIAvatar } from "./ai-avatar";
 import { User } from "lucide-react";
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 
 interface ChatMessage {
   id: string;
   content: string;
   role: "user" | "assistant";
   timestamp: Date;
+  image?: {
+    url: string;
+    file?: File;
+  };
+  metadata?: {
+    mealLogged?: boolean;
+    mealRemoved?: boolean;
+    weightLogged?: boolean;
+    loggedMeal?: {
+      mealName: string;
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+      mealType: string;
+    };
+    removedMeal?: {
+      mealName: string;
+      mealId?: string;
+    };
+    loggedWeight?: {
+      weight: number;
+    };
+  };
 }
 
 interface ChatViewProps {
   messages: ChatMessage[];
   isLoading?: boolean;
+  loadingType?: 'thinking' | 'logging';
 }
 
-export function ChatView({ messages, isLoading = false }: ChatViewProps) {
+export function ChatView({ messages, isLoading = false, loadingType = 'thinking' }: ChatViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -29,6 +55,17 @@ export function ChatView({ messages, isLoading = false }: ChatViewProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  // Cleanup object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      messages.forEach(message => {
+        if (message.image?.url && message.image.url.startsWith('blob:')) {
+          URL.revokeObjectURL(message.image.url);
+        }
+      });
+    };
+  }, [messages]);
 
   const formatTime = (timestamp: Date) => {
     return timestamp.toLocaleTimeString([], { 
@@ -49,9 +86,9 @@ export function ChatView({ messages, isLoading = false }: ChatViewProps) {
                 <AIAvatar className="h-12 w-12" />
               </AvatarFallback>
             </Avatar>
-            <h3 className="font-semibold text-base mb-2">Welcome to NibletAI!</h3>
+            <h3 className="font-semibold text-base mb-2">Hi! I&apos;m Niblet! 👋</h3>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              I&apos;m your AI health assistant. Ask me anything about your fitness goals!
+              I&apos;m your friendly AI health coach. I can help you log meals, track progress, and reach your wellness goals. Upload food photos or just tell me what you ate!
             </p>
           </div>
         ) : (
@@ -87,17 +124,40 @@ export function ChatView({ messages, isLoading = false }: ChatViewProps) {
                   message.role === "user" ? "items-end" : "items-start"
                 )}>
                   <div className={cn(
-                    "rounded-2xl px-3 py-2 shadow-sm",
+                    "rounded-2xl shadow-sm",
                     message.role === "user" 
                       ? "bg-blue-600 text-white rounded-br-md" 
-                      : "bg-muted rounded-bl-md"
+                      : "bg-muted rounded-bl-md",
+                    message.image ? "overflow-hidden p-0" : "px-3 py-2"
                   )}>
-                    {message.role === "assistant" ? (
-                      <Markdown className="prose prose-xs max-w-none prose-p:my-0.5 prose-headings:my-1 text-xs">
-                        {message.content}
-                      </Markdown>
-                    ) : (
-                      <p className="text-xs whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    {/* Image Display */}
+                    {message.image && (
+                      <div className="w-full">
+                        <Image
+                          src={message.image.url}
+                          alt="Uploaded food image"
+                          width={200}
+                          height={150}
+                          className={cn(
+                            "w-full max-w-[200px] h-auto object-cover",
+                            message.content.trim() ? "rounded-t-2xl" : "rounded-2xl"
+                          )}
+                          unoptimized={true}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Text Content */}
+                    {message.content && (
+                      <div className={cn("px-3 py-2", message.image && "pt-2")}>
+                        {message.role === "assistant" ? (
+                          <Markdown className="prose prose-xs max-w-none prose-p:my-0.5 prose-headings:my-1 text-xs">
+                            {message.content}
+                          </Markdown>
+                        ) : (
+                          <p className="text-xs whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                   <span className={cn(
@@ -127,7 +187,9 @@ export function ChatView({ messages, isLoading = false }: ChatViewProps) {
                         <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
                         <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                       </div>
-                      <span className="text-[10px] text-muted-foreground ml-2">Thinking...</span>
+                      <span className="text-[10px] text-muted-foreground ml-2">
+                        {loadingType === 'logging' ? 'Logging...' : 'Thinking...'}
+                      </span>
                     </div>
                   </div>
                 </div>

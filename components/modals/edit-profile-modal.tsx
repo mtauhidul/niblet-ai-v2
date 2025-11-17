@@ -19,11 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { doc, updateDoc } from "firebase/firestore";
+import { Edit } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ProfileData {
   firstName: string;
@@ -32,6 +32,8 @@ interface ProfileData {
   gender: string;
   height: string;
   activityLevel: string;
+  city: string;
+  country: string;
 }
 
 export function EditProfileModal() {
@@ -45,6 +47,8 @@ export function EditProfileModal() {
     gender: "",
     height: "",
     activityLevel: "",
+    city: "",
+    country: "",
   });
 
   // Load user profile data when modal opens or user profile changes
@@ -57,6 +61,8 @@ export function EditProfileModal() {
         gender: userProfile.gender || "",
         height: userProfile.height?.toString() || "",
         activityLevel: userProfile.activityLevel || "",
+        city: userProfile.city || "",
+        country: userProfile.country || "",
       });
     }
   }, [userProfile]);
@@ -67,8 +73,8 @@ export function EditProfileModal() {
 
     setSaving(true);
     try {
-      const userDoc = doc(db, 'users', userProfile.id);
-      
+      const userDoc = doc(db, "users", userProfile.id);
+
       // Calculate BMI if height and current weight are available
       let bmi = userProfile.bmi;
       if (profileData.height && userProfile.currentWeight) {
@@ -83,6 +89,8 @@ export function EditProfileModal() {
         gender: profileData.gender || null,
         height: profileData.height ? parseFloat(profileData.height) : null,
         activityLevel: profileData.activityLevel || null,
+        city: profileData.city.trim() || null,
+        country: profileData.country.trim() || null,
         bmi: bmi,
         updatedAt: new Date(),
       });
@@ -90,14 +98,14 @@ export function EditProfileModal() {
       await refreshUserProfile();
       setOpen(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
     } finally {
       setSaving(false);
     }
   };
 
   const updateProfileData = (field: keyof ProfileData, value: string) => {
-    setProfileData(prev => ({ ...prev, [field]: value }));
+    setProfileData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -115,11 +123,13 @@ export function EditProfileModal() {
             Update your personal information
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-3 w-full">
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="firstName" className="text-xs font-medium">First Name *</Label>
+              <Label htmlFor="firstName" className="text-xs font-medium">
+                First Name *
+              </Label>
               <Input
                 id="firstName"
                 placeholder="John"
@@ -129,9 +139,11 @@ export function EditProfileModal() {
                 className="h-8 text-xs"
               />
             </div>
-            
+
             <div className="space-y-1.5">
-              <Label htmlFor="lastName" className="text-xs font-medium">Last Name *</Label>
+              <Label htmlFor="lastName" className="text-xs font-medium">
+                Last Name *
+              </Label>
               <Input
                 id="lastName"
                 placeholder="Doe"
@@ -143,7 +155,9 @@ export function EditProfileModal() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="age" className="text-xs font-medium">Age</Label>
+              <Label htmlFor="age" className="text-xs font-medium">
+                Age
+              </Label>
               <Input
                 id="age"
                 type="number"
@@ -153,9 +167,11 @@ export function EditProfileModal() {
                 className="h-8 text-xs"
               />
             </div>
-            
+
             <div className="space-y-1.5">
-              <Label htmlFor="gender" className="text-xs font-medium">Gender</Label>
+              <Label htmlFor="gender" className="text-xs font-medium">
+                Gender
+              </Label>
               <Select
                 value={profileData.gender}
                 onValueChange={(value) => updateProfileData("gender", value)}
@@ -164,15 +180,23 @@ export function EditProfileModal() {
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male" className="text-xs">Male</SelectItem>
-                  <SelectItem value="female" className="text-xs">Female</SelectItem>
-                  <SelectItem value="other" className="text-xs">Other</SelectItem>
+                  <SelectItem value="male" className="text-xs">
+                    Male
+                  </SelectItem>
+                  <SelectItem value="female" className="text-xs">
+                    Female
+                  </SelectItem>
+                  <SelectItem value="other" className="text-xs">
+                    Other
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="height" className="text-xs font-medium">Height (cm)</Label>
+              <Label htmlFor="height" className="text-xs font-medium">
+                Height (cm)
+              </Label>
               <Input
                 id="height"
                 type="number"
@@ -184,22 +208,65 @@ export function EditProfileModal() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="activityLevel" className="text-xs font-medium">Activity Level</Label>
+              <Label htmlFor="activityLevel" className="text-xs font-medium">
+                Activity Level
+              </Label>
               <Select
                 value={profileData.activityLevel}
-                onValueChange={(value) => updateProfileData("activityLevel", value)}
+                onValueChange={(value) =>
+                  updateProfileData("activityLevel", value)
+                }
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Select activity level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sedentary" className="text-xs">Sedentary</SelectItem>
-                  <SelectItem value="lightly_active" className="text-xs">Lightly Active</SelectItem>
-                  <SelectItem value="moderately_active" className="text-xs">Moderately Active</SelectItem>
-                  <SelectItem value="very_active" className="text-xs">Very Active</SelectItem>
-                  <SelectItem value="extremely_active" className="text-xs">Extremely Active</SelectItem>
+                  <SelectItem value="sedentary" className="text-xs">
+                    Sedentary
+                  </SelectItem>
+                  <SelectItem value="lightly_active" className="text-xs">
+                    Lightly Active
+                  </SelectItem>
+                  <SelectItem value="moderately_active" className="text-xs">
+                    Moderately Active
+                  </SelectItem>
+                  <SelectItem value="very_active" className="text-xs">
+                    Very Active
+                  </SelectItem>
+                  <SelectItem value="extremely_active" className="text-xs">
+                    Extremely Active
+                  </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Location Fields */}
+            <div className="space-y-1.5">
+              <Label htmlFor="city" className="text-xs font-medium">
+                City
+              </Label>
+              <Input
+                id="city"
+                type="text"
+                placeholder="e.g., Tokyo"
+                value={profileData.city}
+                onChange={(e) => updateProfileData("city", e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="country" className="text-xs font-medium">
+                Country
+              </Label>
+              <Input
+                id="country"
+                type="text"
+                placeholder="e.g., Japan"
+                value={profileData.country}
+                onChange={(e) => updateProfileData("country", e.target.value)}
+                className="h-8 text-xs"
+              />
             </div>
           </div>
 
@@ -213,7 +280,11 @@ export function EditProfileModal() {
             >
               Cancel
             </Button>
-            <Button type="submit" className="h-8 text-xs w-full" disabled={saving}>
+            <Button
+              type="submit"
+              className="h-8 text-xs w-full"
+              disabled={saving}
+            >
               {saving ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

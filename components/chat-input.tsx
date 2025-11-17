@@ -7,24 +7,30 @@ import { Paperclip, Send } from "lucide-react";
 import { useRef, useState } from "react";
 
 interface ChatInputProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, image?: File) => void;
   disabled?: boolean;
 }
 
 export default function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
   const [input, setInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (input.trim() && !disabled) {
-      onSendMessage(input.trim());
+    if ((input.trim() || selectedImage) && !disabled) {
+      onSendMessage(input.trim(), selectedImage || undefined);
       setInput("");
+      setSelectedImage(null);
       // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
+      }
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -63,22 +69,38 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
             <input
               ref={fileInputRef}
               type="file"
-              multiple
-              accept="image/*,.pdf,.txt,.doc,.docx"
+              accept="image/*"
               className="sr-only"
               onChange={(e) => {
-                console.log("Files selected:", e.target.files);
-                // TODO: Handle file uploads
+                const file = e.target.files?.[0];
+                if (file) {
+                  setSelectedImage(file);
+                }
               }}
             />
 
             {/* Text Input */}
             <div className="flex-1 min-w-0">
+              {/* Selected Image Preview */}
+              {selectedImage && (
+                <div className="mb-2 relative">
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <span className="text-xs text-blue-700 dark:text-blue-300">📷 {selectedImage.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImage(null)}
+                      className="ml-auto text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
-                placeholder={disabled ? "AI is responding..." : "Type a message about your health goals..."}
+                placeholder={disabled ? "Niblet is responding..." : selectedImage ? "Describe this food or ask about it..." : "Ask Niblet about meals, goals, or upload food photos..."}
                 className={cn(
                   "min-h-8 max-h-20 resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground text-sm",
                   disabled && "cursor-not-allowed opacity-50"
@@ -100,11 +122,11 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
               size="sm"
               className={cn(
                 "h-7 w-7 p-0 rounded-full shrink-0 transition-all duration-200",
-                input.trim() && !disabled
+                (input.trim() || selectedImage) && !disabled
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
                   : "bg-muted text-muted-foreground cursor-not-allowed"
               )}
-              disabled={!input.trim() || disabled}
+              disabled={(!input.trim() && !selectedImage) || disabled}
             >
               <Send className="h-3.5 w-3.5" />
               <span className="sr-only">Send message</span>
@@ -120,17 +142,27 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
             variant="outline"
             size="sm"
             className="text-xs rounded-full whitespace-nowrap shrink-0"
-            onClick={() => setInput("What should I eat for breakfast?")}
+            onClick={() => setInput("I just ate 150g grilled chicken with 100g rice and steamed broccoli")}
             disabled={disabled}
           >
-            💪 Meals
+            🍳 Log meal
           </Button>
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="text-xs rounded-full whitespace-nowrap shrink-0"
-            onClick={() => setInput("How am I progressing towards my weight goal?")}
+            onClick={() => setInput("My current weight is 70kg")}
+            disabled={disabled}
+          >
+            ⚖️ Log weight
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs rounded-full whitespace-nowrap shrink-0"
+            onClick={() => setInput("How am I doing with my goals today?")}
             disabled={disabled}
           >
             📊 Progress
@@ -140,10 +172,20 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
             variant="outline"
             size="sm"
             className="text-xs rounded-full whitespace-nowrap shrink-0"
-            onClick={() => setInput("Create a workout plan for me")}
+            onClick={() => setInput("Suggest a healthy dinner under 500 calories")}
             disabled={disabled}
           >
-            🏋️ Workout
+            🥗 Meal ideas
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs rounded-full whitespace-nowrap shrink-0"
+            onClick={() => setInput("Remove my last meal")}
+            disabled={disabled}
+          >
+            🗑️ Remove meal
           </Button>
         </div>
       </div>
