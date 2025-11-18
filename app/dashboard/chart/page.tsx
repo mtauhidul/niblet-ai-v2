@@ -5,6 +5,9 @@ import { Activity, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
+// Note: metadata export not supported in client components
+// The page title is managed by the parent layout
+
 import {
   Card,
   CardContent,

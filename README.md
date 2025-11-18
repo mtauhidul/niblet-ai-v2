@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NibletAI - Your AI-Powered Health Assistant
 
-## Getting Started
+Transform your health journey with personalized AI guidance, smart tracking, and data-driven insights.
 
-First, run the development server:
+## 🌟 Features
 
+- **AI-Powered Chat**: Interact with Niblet, your personal health assistant, for nutritional advice, meal logging, and health insights
+- **Smart Meal Tracking**: Log meals manually or upload food photos for automatic nutritional analysis
+- **Weight Tracking**: Monitor your weight progress with visual charts and trends
+- **Goal Setting**: Set and track personalized health goals with smart recommendations
+- **Progress Visualization**: Beautiful charts showing your calorie consumption and weight trends
+- **Real-time BMI Calculation**: Automatic BMI calculation with health category insights
+- **Activity Level Tracking**: Customize your calorie targets based on your activity level
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ or higher
+- pnpm (recommended) or npm
+- Firebase account
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd niblet-ai
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+pnpm install
+# or
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up Firebase:
+   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+   - Enable Authentication (Google Sign-in)
+   - Create a Firestore database
+   - See `FIREBASE_SETUP.md` for detailed instructions
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Configure environment variables:
+   - Copy `.env.example` to `.env.local`
+   - Add your Firebase configuration
 
-## Learn More
+5. Run the development server:
+```bash
+pnpm dev
+# or
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🏗️ Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Framework**: Next.js 16 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **UI Components**: Radix UI
+- **Authentication**: Firebase Auth
+- **Database**: Cloud Firestore
+- **AI Integration**: OpenAI API
+- **Charts**: Recharts
+- **Icons**: Lucide React, Tabler Icons
 
-## Deploy on Vercel
+## 📁 Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+niblet-ai/
+├── app/                    # Next.js app directory
+│   ├── api/               # API routes
+│   ├── auth/              # Authentication page
+│   ├── dashboard/         # Dashboard pages
+│   ├── onboarding/        # User onboarding flow
+│   └── layout.tsx         # Root layout with metadata
+├── components/            # React components
+│   ├── modals/           # Modal components
+│   └── ui/               # UI components (shadcn/ui)
+├── contexts/             # React contexts
+├── lib/                  # Utility functions and Firebase config
+└── public/               # Static assets
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔒 Authentication Flow
+
+1. **New Users**: Auth → Onboarding → Dashboard
+2. **Returning Users**: Auth → Dashboard
+3. **Incomplete Onboarding**: Auth → Onboarding
+
+## 📱 Key Pages
+
+- `/` - Landing page with product information
+- `/auth` - Google sign-in authentication
+- `/onboarding` - Multi-step onboarding for new users
+- `/dashboard` - Main dashboard with AI chat and meal logging
+- `/dashboard/chart` - Detailed progress charts
+- `/dashboard/logs` - Meal and weight logs history
+- `/dashboard/profile` - User profile management
+
+## 🛠️ Available Scripts
+
+- `pnpm dev` - Start development server
+- `pnpm build` - Build for production
+- `pnpm start` - Start production server
+- `pnpm lint` - Run ESLint
+
+## 📚 Documentation
+
+- [Firebase Setup Guide](FIREBASE_SETUP.md)
+- [Onboarding System](ONBOARDING_SYSTEM.md)
+- [Onboarding Fix Details](ONBOARDING_FIX.md)
+
+## 🤝 Contributing
+
+This is a private project. For questions or support, contact the development team.
+
+## 📄 License
+
+Proprietary - All rights reserved
+
+---
+
+Built with ❤️ by the NibletAI team

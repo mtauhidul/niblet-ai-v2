@@ -2,6 +2,26 @@
   "name": "niblet-ai",
   "version": "0.1.0",
   "private": true,
+  "description": "Your AI-powered health assistant for personalized nutrition tracking, meal planning, and health insights",
+  "author": "NibletAI Team",
+  "license": "UNLICENSED",
+  "keywords": [
+    "health",
+    "AI",
+    "nutrition",
+    "calorie-tracking",
+    "fitness",
+    "meal-planning",
+    "health-assistant"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mtauhidul/niblet-ai-v2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mtauhidul/niblet-ai-v2/issues"
+  },
+  "homepage": "https://niblet-ai.com",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

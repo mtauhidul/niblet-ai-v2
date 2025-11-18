@@ -1,0 +1,9 @@
+# NibletAI - Robots.txt
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /onboarding/
+
+# Sitemap location
+Sitemap: https://niblet-ai.com/sitemap.xml
