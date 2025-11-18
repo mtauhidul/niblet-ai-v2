@@ -136,7 +136,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const context = [];
     
     if (userProfile) {
-      context.push(`User: ${userProfile.firstName} ${userProfile.lastName}`);
+      context.push(`User: ${userProfile.firstName}`);
       context.push(`Age: ${userProfile.age}, Gender: ${userProfile.gender}`);
       context.push(`Current Weight: ${userProfile.currentWeight}kg`);
       if (userProfile.targetWeight) context.push(`Target Weight: ${userProfile.targetWeight}kg`);
@@ -466,24 +466,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const lastCheckIn = user?.uid ? sessionStorage.getItem(`last_checkin_${user.uid}`) : null;
     const isFirstSessionToday = lastCheckIn !== today;
     
-    let greetingContent = `Hi ${userProfile?.firstName || 'there'}! 👋 I'm Niblet, your AI health coach.`;
+    const greetingContent = `Good ${getTimeOfDay()}, ${userProfile?.firstName || 'there'}! 👋 What meal would you like to log?`;
     
     if (isFirstSessionToday && userProfile?.firstName) {
-      // Daily check-in message
-      greetingContent = `Good ${getTimeOfDay()}! 🌅 Ready for another great day, ${userProfile.firstName}? 
-
-Let me help you log your recent meals and current weight:
-• What have you eaten recently? (breakfast, snacks, etc.)
-• What's your current weight today?
-
-Just tell me what you've had and I'll log everything for you! 📝`;
-      
       // Mark that we've done the daily check-in
       if (user?.uid) {
         sessionStorage.setItem(`last_checkin_${user.uid}`, today);
       }
-    } else {
-      greetingContent += ` Ready to continue your wellness journey? How can I help you today?`;
     }
     
     const greetingMessage: ChatMessage = {

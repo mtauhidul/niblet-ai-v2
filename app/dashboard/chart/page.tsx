@@ -1,13 +1,7 @@
 "use client";
 
 import { format, isAfter, startOfDay, subDays, subYears } from "date-fns";
-import {
-  Activity,
-  Calendar,
-  Target,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { Activity, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
@@ -15,7 +9,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -42,18 +35,25 @@ const timeframeLabels = {
   "1year": "Last Year",
 };
 
-const combinedChartConfig = {
+const weightChartConfig = {
   weight: {
     label: "Current Weight (kg)",
-    color: "hsl(var(--chart-1))",
+    color: "#CAFF66",
   },
   target: {
     label: "Target Weight (kg)",
-    color: "hsl(var(--chart-2))",
+    color: "#6B7280",
   },
+} satisfies ChartConfig;
+
+const calorieChartConfig = {
   calories: {
     label: "Daily Calories",
-    color: "hsl(var(--chart-3))",
+    color: "#C8A8FF",
+  },
+  goal: {
+    label: "Calorie Goal",
+    color: "#FFE5A8",
   },
 } satisfies ChartConfig;
 
@@ -63,9 +63,9 @@ export default function ChartPage() {
   const { userProfile } = useAuth();
   const { mealLogs, weightLogs } = useUserData();
 
-  // Process data based on selected timeframe
-  const chartData = useMemo(() => {
-    if (!mealLogs.length && !weightLogs.length) return [];
+  // Process weight data
+  const weightData = useMemo(() => {
+    if (!weightLogs.length) return [];
 
     const now = new Date();
     let startDate: Date;
@@ -87,264 +87,361 @@ export default function ChartPage() {
         startDate = subDays(now, 7);
     }
 
-    // Group data by date
-    const dateMap = new Map<
-      string,
-      { weight?: number; calories: number; target: number }
-    >();
-
-    // Process weight logs
-    weightLogs
+    return weightLogs
       .filter((log) => isAfter(new Date(log.recordedAt), startDate))
-      .forEach((log) => {
-        const dateKey = format(
-          startOfDay(new Date(log.recordedAt)),
-          "yyyy-MM-dd"
-        );
-        const existing = dateMap.get(dateKey) || {
-          calories: 0,
-          target: userProfile?.targetWeight || 70,
-        };
-        dateMap.set(dateKey, { ...existing, weight: log.weight });
-      });
+      .map((log) => ({
+        date: format(startOfDay(new Date(log.recordedAt)), "yyyy-MM-dd"),
+        weight: log.weight,
+        target: userProfile?.targetWeight || 70,
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [weightLogs, selectedTimeframe, userProfile?.targetWeight]);
 
-    // Process meal logs (aggregate calories by date)
+  // Process calorie data
+  const calorieData = useMemo(() => {
+    if (!mealLogs.length) return [];
+
+    const now = new Date();
+    let startDate: Date;
+
+    switch (selectedTimeframe) {
+      case "7days":
+        startDate = subDays(now, 7);
+        break;
+      case "30days":
+        startDate = subDays(now, 30);
+        break;
+      case "90days":
+        startDate = subDays(now, 90);
+        break;
+      case "1year":
+        startDate = subYears(now, 1);
+        break;
+      default:
+        startDate = subDays(now, 7);
+    }
+
+    // Group by date and sum calories
+    const dateMap = new Map<string, number>();
+    
     mealLogs
       .filter((log) => isAfter(new Date(log.consumedAt), startDate))
       .forEach((log) => {
-        const dateKey = format(
-          startOfDay(new Date(log.consumedAt)),
-          "yyyy-MM-dd"
-        );
-        const existing = dateMap.get(dateKey) || {
-          calories: 0,
-          target: userProfile?.targetWeight || 70,
-        };
-        dateMap.set(dateKey, {
-          ...existing,
-          calories: existing.calories + log.calories,
-        });
+        const dateKey = format(startOfDay(new Date(log.consumedAt)), "yyyy-MM-dd");
+        const existing = dateMap.get(dateKey) || 0;
+        dateMap.set(dateKey, existing + log.calories);
       });
 
-    // Convert to array and sort by date
     return Array.from(dateMap.entries())
-      .map(([date, data]) => ({ date, ...data }))
+      .map(([date, calories]) => ({
+        date,
+        calories,
+        goal: userProfile?.targetCalories || 2000,
+      }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [mealLogs, weightLogs, selectedTimeframe, userProfile?.targetWeight]);
+  }, [mealLogs, selectedTimeframe, userProfile?.targetCalories]);
 
-  // Calculate trends
-  const latestWeight =
-    chartData.length > 0 ? chartData[chartData.length - 1]?.weight : undefined;
-  const earliestWeight =
-    chartData.length > 0 ? chartData[0]?.weight : undefined;
-  const weightChange =
-    latestWeight && earliestWeight ? latestWeight - earliestWeight : 0;
-  const avgCalories =
-    chartData.length > 0
-      ? Math.round(
-          chartData.reduce(
-            (sum: number, day: { calories: number }) => sum + day.calories,
-            0
-          ) / chartData.length
-        )
-      : 0;
+  // Calculate weight trends
+  const latestWeight = weightData.length > 0 ? weightData[weightData.length - 1]?.weight : undefined;
+  const earliestWeight = weightData.length > 0 ? weightData[0]?.weight : undefined;
+  const weightChange = latestWeight && earliestWeight ? latestWeight - earliestWeight : 0;
+  
+  // Calculate weight change rate (kg per week)
+  const weightChangeRate = (() => {
+    if (!weightData.length || weightData.length < 2) return 0;
+    const daysBetween = Math.abs(
+      new Date(weightData[weightData.length - 1].date).getTime() - 
+      new Date(weightData[0].date).getTime()
+    ) / (1000 * 60 * 60 * 24);
+    const weeks = daysBetween / 7;
+    return weeks > 0 ? weightChange / weeks : 0;
+  })();
+  
+  // Calculate average calories
+  const avgCalories = calorieData.length > 0
+    ? Math.round(calorieData.reduce((sum, day) => sum + day.calories, 0) / calorieData.length)
+    : 0;
+  
+  // Calculate calorie goal and surplus/deficit
+  const calorieGoal = userProfile?.targetCalories || 0;
+  const calorieDeficitOrSurplus = calorieGoal > 0 ? avgCalories - calorieGoal : 0;
+  
+  // Calculate streak (consecutive days with meals logged)
+  const streak = (() => {
+    if (!calorieData.length) return 0;
+    let count = 0;
+    const now = new Date();
+    for (let i = 0; i < 30; i++) {
+      const checkDate = format(subDays(now, i), "yyyy-MM-dd");
+      if (calorieData.some(d => d.date === checkDate)) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  })();
+  
   const targetWeight = userProfile?.targetWeight || 70;
   const weightToGo = latestWeight ? latestWeight - targetWeight : 0;
+  
+  // Calculate progress percentage
+  const progressPercent = (() => {
+    if (!userProfile?.targetWeight || !userProfile?.currentWeight) return 0;
+    const currentWeight = latestWeight || userProfile.currentWeight;
+    const startWeight = earliestWeight || userProfile.currentWeight;
+    const targetWeight = userProfile.targetWeight;
+    if (Math.abs(startWeight - targetWeight) < 0.1) return 100;
+    const progress = ((startWeight - currentWeight) / (startWeight - targetWeight)) * 100;
+    return Math.max(0, Math.min(100, Math.round(progress)));
+  })();
+
+  // Calculate average macros from meal logs
+  const avgMacros = useMemo(() => {
+    if (!mealLogs.length) return { protein: 0, carbs: 0, fat: 0 };
+    
+    const now = new Date();
+    let startDate: Date;
+    
+    switch (selectedTimeframe) {
+      case "7days":
+        startDate = subDays(now, 7);
+        break;
+      case "30days":
+        startDate = subDays(now, 30);
+        break;
+      case "90days":
+        startDate = subDays(now, 90);
+        break;
+      case "1year":
+        startDate = subYears(now, 1);
+        break;
+      default:
+        startDate = subDays(now, 7);
+    }
+
+    const filteredLogs = mealLogs.filter((log) => 
+      isAfter(new Date(log.consumedAt), startDate)
+    );
+
+    if (!filteredLogs.length) return { protein: 0, carbs: 0, fat: 0 };
+
+    const totalProtein = filteredLogs.reduce((sum, log) => sum + log.protein, 0);
+    const totalCarbs = filteredLogs.reduce((sum, log) => sum + log.carbohydrates, 0);
+    const totalFat = filteredLogs.reduce((sum, log) => sum + log.fat, 0);
+
+    const daysCount = calorieData.length || 1;
+
+    return {
+      protein: Math.round(totalProtein / daysCount),
+      carbs: Math.round(totalCarbs / daysCount),
+      fat: Math.round(totalFat / daysCount),
+    };
+  }, [mealLogs, selectedTimeframe, calorieData.length]);
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header - fixed and mobile responsive */}
-      <div className="px-3 sm:px-4 py-3 border-b bg-background/95 backdrop-blur">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* Header */}
+      <div className="px-3 py-3 border-b border-white/5">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold">Analytics</h1>
-            <p className="text-xs text-muted-foreground">
-              Progress insights and trends
-            </p>
+            <h1 className="text-base font-semibold text-white">Analytics</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-3 w-3 text-muted-foreground" />
-            <Select
-              value={selectedTimeframe}
-              onValueChange={(value: keyof typeof timeframeLabels) =>
-                setSelectedTimeframe(value)
-              }
-            >
-              <SelectTrigger className="w-32 sm:w-32 h-7 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(timeframeLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key} className="text-xs">
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            value={selectedTimeframe}
+            onValueChange={(value: keyof typeof timeframeLabels) =>
+              setSelectedTimeframe(value)
+            }
+          >
+            <SelectTrigger className="w-30 h-8 text-xs bg-white/5 border-white/10 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-black/95 border-white/10">
+              {Object.entries(timeframeLabels).map(([key, label]) => (
+                <SelectItem
+                  key={key}
+                  value={key}
+                  className="text-xs text-white focus:bg-white/10 focus:text-white"
+                >
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Content - scrollable */}
-      <div className="flex-1 overflow-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+      <div className="flex-1 overflow-auto p-3 space-y-3">
         {/* Getting Started Card - Show when no data */}
-        {chartData.length === 0 && (
-          <Card className="border-dashed border-2 border-muted-foreground/25">
+        {weightData.length === 0 && calorieData.length === 0 && (
+          <Card className="border-dashed border-2 border-white/10 bg-transparent">
             <CardContent className="pt-6">
               <div className="text-center space-y-3">
-                <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Activity className="h-6 w-6 text-primary" />
+                <div className="mx-auto w-12 h-12 bg-[#CAFF66]/10 rounded-full flex items-center justify-center">
+                  <Activity className="h-6 w-6 text-[#CAFF66]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm">Start Your Health Journey</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Begin tracking to see detailed analytics and progress insights
+                  <h3 className="font-semibold text-sm text-white">
+                    Start Tracking
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Log meals and weight to see analytics
                   </p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto">
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <div className="text-2xl mb-1">🍽️</div>
-                    <div className="text-xs font-medium">Log your meals</div>
-                    <div className="text-xs text-muted-foreground">Track calories & nutrition</div>
-                  </div>
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <div className="text-2xl mb-1">⚖️</div>
-                    <div className="text-xs font-medium">Record weight</div>
-                    <div className="text-xs text-muted-foreground">Monitor your progress</div>
-                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Summary Cards - Responsive grid */}
-        <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 sm:px-3 pt-2 sm:pt-3">
-              <CardTitle className="text-xs font-medium">Current</CardTitle>
-              <Activity className="h-3 w-3 text-muted-foreground" />
+        {/* Summary Cards - Improved with insights */}
+        <div className="grid gap-2 grid-cols-2">
+          {/* Current Weight */}
+          <Card className="bg-white/5 border-white/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-2.5">
+              <CardTitle className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+                Current Weight
+              </CardTitle>
+              <Activity className="h-3 w-3 text-[#CAFF66]" />
             </CardHeader>
-            <CardContent className="pb-2 px-2 sm:px-3">
-              <div className="text-sm sm:text-lg font-bold">
-                {latestWeight ? `${latestWeight} kg` : userProfile?.currentWeight ? `${userProfile.currentWeight} kg` : "--"}
+            <CardContent className="pb-2 px-3">
+              <div className="text-xl font-bold text-white">
+                {latestWeight
+                  ? `${latestWeight}`
+                  : userProfile?.currentWeight
+                  ? `${userProfile.currentWeight}`
+                  : "--"}
+                <span className="text-sm text-gray-400 ml-0.5">kg</span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {latestWeight ? (
-                  weightChange < 0 ? (
-                    <span className="text-green-600 flex items-center gap-1">
-                      <TrendingDown className="h-2 w-2" />
-                      {Math.abs(weightChange).toFixed(1)} kg ↓
-                    </span>
-                  ) : weightChange > 0 ? (
-                    <span className="text-red-600 flex items-center gap-1">
-                      <TrendingUp className="h-2 w-2" />
-                      {weightChange.toFixed(1)} kg ↑
+              <p className="text-[9px] text-gray-500">
+                {weightChangeRate !== 0 ? (
+                  weightChangeRate < 0 ? (
+                    <span className="text-[#CAFF66] flex items-center gap-0.5">
+                      <TrendingDown className="h-2.5 w-2.5" />
+                      {Math.abs(weightChangeRate).toFixed(2)}kg/week
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">No change</span>
+                    <span className="text-[#FFE5A8] flex items-center gap-0.5">
+                      <TrendingUp className="h-2.5 w-2.5" />
+                      {weightChangeRate.toFixed(2)}kg/week
+                    </span>
                   )
                 ) : (
-                  <span className="text-muted-foreground">
-                    {userProfile?.currentWeight ? "Profile weight" : "No weight logged"}
+                  <span>No change</span>
+                )}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Progress to Goal */}
+          <Card className="bg-white/5 border-white/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-2.5">
+              <CardTitle className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+                Progress
+              </CardTitle>
+              <Target className="h-3 w-3 text-[#FFE5A8]" />
+            </CardHeader>
+            <CardContent className="pb-2 px-3">
+              <div className="text-xl font-bold text-white">
+                {progressPercent > 0 ? progressPercent : "--"}
+                <span className="text-sm text-gray-400">%</span>
+              </div>
+              <p className="text-[9px] text-gray-500">
+                {Math.abs(weightToGo) > 0.1 ? (
+                  <span>{Math.abs(weightToGo).toFixed(1)}kg to go</span>
+                ) : progressPercent > 0 ? (
+                  <span className="text-[#CAFF66]">Goal reached! 🎉</span>
+                ) : (
+                  <span>Set goal to track</span>
+                )}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Average Calories with Goal Comparison */}
+          <Card className="bg-white/5 border-white/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-2.5">
+              <CardTitle className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+                Daily Calories
+              </CardTitle>
+              <Activity className="h-3 w-3 text-[#C8A8FF]" />
+            </CardHeader>
+            <CardContent className="pb-2 px-3">
+              <div className="text-xl font-bold text-white">
+                {avgCalories > 0 ? avgCalories : "--"}
+                {calorieGoal > 0 && (
+                  <span className="text-xs text-gray-400 ml-1">
+                    / {calorieGoal}
                   </span>
                 )}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 sm:px-3 pt-2 sm:pt-3">
-              <CardTitle className="text-xs font-medium">Target</CardTitle>
-              <Target className="h-3 w-3 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="pb-2 px-2 sm:px-3">
-              <div className="text-sm sm:text-lg font-bold">
-                {userProfile?.targetWeight ? `${userProfile.targetWeight} kg` : "--"}
               </div>
-              <p className="text-xs text-muted-foreground">
-                {userProfile?.targetWeight ? (
-                  latestWeight || userProfile.currentWeight ? (
-                    Math.abs(weightToGo) > 0.1
-                      ? `${Math.abs(weightToGo).toFixed(1)} kg to ${weightToGo > 0 ? 'lose' : 'gain'}`
-                      : "Target reached!"
+              <p className="text-[9px] text-gray-500">
+                {calorieGoal > 0 && avgCalories > 0 ? (
+                  calorieDeficitOrSurplus > 0 ? (
+                    <span className="text-[#FFE5A8]">
+                      +{calorieDeficitOrSurplus} over goal
+                    </span>
+                  ) : calorieDeficitOrSurplus < 0 ? (
+                    <span className="text-[#CAFF66]">
+                      {Math.abs(calorieDeficitOrSurplus)} under goal
+                    </span>
                   ) : (
-                    "Log weight to track"
+                    <span className="text-[#CAFF66]">On target! 🎯</span>
                   )
                 ) : (
-                  "No target set"
+                  <span>Daily average</span>
                 )}
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 sm:px-3 pt-2 sm:pt-3">
-              <CardTitle className="text-xs font-medium">
-                Avg Calories
+          {/* Logging Streak */}
+          <Card className="bg-white/5 border-white/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-2.5">
+              <CardTitle className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+                Streak
               </CardTitle>
-              <Activity className="h-3 w-3 text-muted-foreground" />
+              <TrendingUp className="h-3 w-3 text-[#CAFF66]" />
             </CardHeader>
-            <CardContent className="pb-2 px-2 sm:px-3">
-              <div className="text-sm sm:text-lg font-bold">
-                {avgCalories > 0 ? avgCalories : "--"}
+            <CardContent className="pb-2 px-3">
+              <div className="text-xl font-bold text-white">
+                {streak}
+                <span className="text-sm text-gray-400 ml-0.5">days</span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {avgCalories > 0 ? "daily average" : "no meals logged"}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-2 sm:px-3 pt-2 sm:pt-3">
-              <CardTitle className="text-xs font-medium">Progress</CardTitle>
-              <TrendingDown className="h-3 w-3 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="pb-2 px-2 sm:px-3">
-              <div className="text-sm sm:text-lg font-bold">
-                {(() => {
-                  if (!userProfile?.targetWeight || !userProfile?.currentWeight) return "--";
-                  
-                  const currentWeight = latestWeight || userProfile.currentWeight;
-                  const startWeight = earliestWeight || userProfile.currentWeight;
-                  const targetWeight = userProfile.targetWeight;
-                  
-                  if (Math.abs(startWeight - targetWeight) < 0.1) return "100"; // Already at target
-                  
-                  const progress = ((startWeight - currentWeight) / (startWeight - targetWeight)) * 100;
-                  return Math.max(0, Math.min(100, Math.round(progress)));
-                })()}
-                %
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {userProfile?.targetWeight ? "to target" : "set target"}
+              <p className="text-[9px] text-gray-500">
+                {streak >= 7 ? (
+                  <span className="text-[#CAFF66]">Keep it up! 🔥</span>
+                ) : streak > 0 ? (
+                  <span>Logging consistently</span>
+                ) : (
+                  <span>Start logging today</span>
+                )}
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Combined Progress Chart */}
-        <Card>
-          <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
-            <CardTitle className="text-sm sm:text-base">
-              Progress Overview
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Weight & calories for{" "}
-              {timeframeLabels[
-                selectedTimeframe as keyof typeof timeframeLabels
-              ].toLowerCase()}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-2 sm:p-3">
-            {chartData.length > 0 ? (
+        {/* Weight Progress Chart */}
+        {weightData.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2 px-3 pt-3">
+              <CardTitle className="text-sm">Weight Progress</CardTitle>
+              <CardDescription className="text-xs">
+                {weightChange < 0
+                  ? `Down ${Math.abs(weightChange).toFixed(1)}kg this period`
+                  : weightChange > 0
+                  ? `Up ${weightChange.toFixed(1)}kg this period`
+                  : "Weight stable"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-2">
               <ChartContainer
-                config={combinedChartConfig}
-                className="h-48 sm:h-64 w-full"
+                config={weightChartConfig}
+                className="h-40 sm:h-48 w-full"
               >
                 <LineChart
                   accessibilityLayer
-                  data={chartData}
+                  data={weightData}
                   margin={{
                     left: 4,
                     right: 4,
@@ -352,7 +449,10 @@ export default function ChartPage() {
                     bottom: 8,
                   }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.1)"
+                  />
                   <XAxis
                     dataKey="date"
                     tickLine={false}
@@ -361,6 +461,7 @@ export default function ChartPage() {
                     fontSize={9}
                     height={30}
                     interval="preserveStartEnd"
+                    stroke="#6B7280"
                     tickFormatter={(value) => {
                       return new Date(value).toLocaleDateString("en-US", {
                         month: "short",
@@ -369,24 +470,13 @@ export default function ChartPage() {
                     }}
                   />
                   <YAxis
-                    yAxisId="weight"
-                    orientation="left"
                     tickLine={false}
                     axisLine={false}
                     tickMargin={2}
                     width={30}
                     domain={["dataMin - 2", "dataMax + 1"]}
                     fontSize={9}
-                  />
-                  <YAxis
-                    yAxisId="calories"
-                    orientation="right"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={2}
-                    width={35}
-                    domain={[0, "dataMax + 500"]}
-                    fontSize={9}
+                    stroke="#6B7280"
                   />
                   <ChartTooltip
                     cursor={true}
@@ -395,130 +485,232 @@ export default function ChartPage() {
 
                   {/* Target Weight Line (Dashed) */}
                   <Line
-                    yAxisId="weight"
                     type="monotone"
                     dataKey="target"
-                    stroke="#ef4444"
+                    stroke="#6B7280"
                     strokeWidth={2}
                     strokeDasharray="8 4"
                     dot={false}
-                    activeDot={{ r: 4, fill: "#ef4444" }}
+                    activeDot={{ r: 4, fill: "#6B7280" }}
                   />
 
                   {/* Current Weight Line */}
                   <Line
-                    yAxisId="weight"
                     type="monotone"
                     dataKey="weight"
-                    stroke="#3b82f6"
+                    stroke="#CAFF66"
                     strokeWidth={3}
-                    dot={{ r: 4, fill: "#3b82f6" }}
-                    activeDot={{ r: 6, fill: "#3b82f6" }}
-                    connectNulls={false}
-                  />
-
-                  {/* Calories Line */}
-                  <Line
-                    yAxisId="calories"
-                    type="monotone"
-                    dataKey="calories"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: "#10b981" }}
-                    activeDot={{ r: 5, fill: "#10b981" }}
+                    dot={{ r: 4, fill: "#CAFF66" }}
+                    activeDot={{ r: 6, fill: "#CAFF66" }}
                     connectNulls={false}
                   />
                 </LineChart>
               </ChartContainer>
-            ) : (
-              <div className="h-48 sm:h-64 flex flex-col items-center justify-center bg-muted/50 rounded-lg p-6 text-center">
-                <Activity className="h-8 w-8 text-muted-foreground mb-3" />
-                <p className="text-sm font-medium text-foreground mb-2">
-                  No data available for {timeframeLabels[selectedTimeframe].toLowerCase()}
-                </p>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Start logging meals and weight to see your progress trends
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2 text-xs">
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
-                    📝 Add meals to track calories
-                  </span>
-                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
-                    ⚖️ Log weight to track progress
-                  </span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="px-3 sm:px-6 pb-3 sm:pb-6">
-            <div className="w-full space-y-3">
-              {/* Summary text */}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Calorie Tracking Chart */}
+        {calorieData.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2 px-3 pt-3">
+              <CardTitle className="text-sm">Calorie Tracking</CardTitle>
+              <CardDescription className="text-xs">
+                {calorieGoal > 0
+                  ? calorieDeficitOrSurplus > 0
+                    ? `Avg ${calorieDeficitOrSurplus} cal over goal`
+                    : calorieDeficitOrSurplus < 0
+                    ? `Avg ${Math.abs(calorieDeficitOrSurplus)} cal under goal`
+                    : "On target!"
+                  : "Your daily calorie intake"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-2">
+              <ChartContainer
+                config={calorieChartConfig}
+                className="h-40 sm:h-48 w-full"
+              >
+                <LineChart
+                  accessibilityLayer
+                  data={calorieData}
+                  margin={{
+                    left: 4,
+                    right: 4,
+                    top: 8,
+                    bottom: 8,
+                  }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.1)"
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={4}
+                    fontSize={9}
+                    height={30}
+                    interval="preserveStartEnd"
+                    stroke="#6B7280"
+                    tickFormatter={(value) => {
+                      return new Date(value).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      });
+                    }}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={2}
+                    width={35}
+                    domain={[0, "dataMax + 500"]}
+                    fontSize={9}
+                    stroke="#6B7280"
+                  />
+                  <ChartTooltip
+                    cursor={true}
+                    content={<ChartTooltipContent />}
+                  />
+
+                  {/* Goal Line (Dashed) */}
+                  {calorieGoal > 0 && (
+                    <Line
+                      type="monotone"
+                      dataKey="goal"
+                      stroke="#FFE5A8"
+                      strokeWidth={2}
+                      strokeDasharray="8 4"
+                      dot={false}
+                      activeDot={{ r: 4, fill: "#FFE5A8" }}
+                    />
+                  )}
+
+                  {/* Actual Calories */}
+                  <Line
+                    type="monotone"
+                    dataKey="calories"
+                    stroke="#C8A8FF"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: "#C8A8FF" }}
+                    activeDot={{ r: 6, fill: "#C8A8FF" }}
+                    connectNulls={false}
+                  />
+                </LineChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Macro Breakdown */}
+        {calorieData.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2 px-3 pt-3">
+              <CardTitle className="text-sm">Daily Macro Breakdown</CardTitle>
+              <CardDescription className="text-xs">
+                Average macronutrient distribution
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-3 space-y-3">
+              {/* Protein */}
               <div className="space-y-1">
-                <div className="flex items-center gap-2 font-medium leading-none text-sm">
-                  {chartData.length > 0 ? (
-                    weightChange !== 0 ? (
-                      <>
-                        Weight{" "}
-                        {weightChange < 0 ? "trending down" : "trending up"} by{" "}
-                        {Math.abs(weightChange).toFixed(1)} kg
-                        {weightChange < 0 ? (
-                          <TrendingDown className="h-4 w-4" />
-                        ) : (
-                          <TrendingUp className="h-4 w-4" />
-                        )}
-                      </>
-                    ) : (
-                      "Weight stable"
-                    )
-                  ) : (
-                    "Start tracking to see your progress trends"
-                  )}
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-400">Protein</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-medium">{avgMacros.protein}g</span>
+                    {userProfile?.targetProtein && (
+                      <span className="text-gray-500">
+                        / {userProfile.targetProtein}g
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="leading-none text-muted-foreground text-xs">
-                  {chartData.length > 0 ? (
-                    <>
-                      {userProfile?.targetWeight && (latestWeight || userProfile.currentWeight) ? (
-                        Math.abs(weightToGo) > 0.1
-                          ? `${Math.abs(weightToGo).toFixed(1)} kg to ${weightToGo > 0 ? 'lose' : 'gain'}`
-                          : "Target weight reached!"
-                      ) : (
-                        "Set a target weight in your goals"
-                      )}{" "}
-                      • Avg {avgCalories || 0} cal/day
-                    </>
-                  ) : (
-                    "Log meals and weight to populate your analytics dashboard"
-                  )}
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#CAFF66] rounded-full transition-all"
+                    style={{
+                      width: userProfile?.targetProtein
+                        ? `${Math.min(100, (avgMacros.protein / userProfile.targetProtein) * 100)}%`
+                        : "100%",
+                    }}
+                  />
                 </div>
               </div>
 
-              {/* Legend - responsive layout */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="h-2 w-4 rounded"
-                    style={{ backgroundColor: "#3b82f6" }}
-                  ></div>
-                  <span>Current Weight</span>
+              {/* Carbs */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-400">Carbs</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-medium">{avgMacros.carbs}g</span>
+                    {userProfile?.targetCarbs && (
+                      <span className="text-gray-500">
+                        / {userProfile.targetCarbs}g
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                   <div
-                    className="h-2 w-4 border-2 border-dashed rounded"
-                    style={{ borderColor: "#ef4444" }}
-                  ></div>
-                  <span>Target Weight</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="h-2 w-4 rounded"
-                    style={{ backgroundColor: "#10b981" }}
-                  ></div>
-                  <span>Daily Calories</span>
+                    className="h-full bg-[#C8A8FF] rounded-full transition-all"
+                    style={{
+                      width: userProfile?.targetCarbs
+                        ? `${Math.min(100, (avgMacros.carbs / userProfile.targetCarbs) * 100)}%`
+                        : "100%",
+                    }}
+                  />
                 </div>
               </div>
-            </div>
-          </CardFooter>
-        </Card>
+
+              {/* Fat */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-400">Fat</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-medium">{avgMacros.fat}g</span>
+                    {userProfile?.targetFat && (
+                      <span className="text-gray-500">
+                        / {userProfile.targetFat}g
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#FFE5A8] rounded-full transition-all"
+                    style={{
+                      width: userProfile?.targetFat
+                        ? `${Math.min(100, (avgMacros.fat / userProfile.targetFat) * 100)}%`
+                        : "100%",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="pt-2 border-t border-white/10">
+                <p className="text-xs text-gray-400 text-center">
+                  {userProfile?.targetProtein && userProfile?.targetCarbs && userProfile?.targetFat ? (
+                    <>
+                      {avgMacros.protein >= userProfile.targetProtein &&
+                      avgMacros.carbs <= userProfile.targetCarbs &&
+                      avgMacros.fat <= userProfile.targetFat ? (
+                        <span className="text-[#CAFF66]">Great macro balance! 💪</span>
+                      ) : avgMacros.protein < userProfile.targetProtein ? (
+                        <span className="text-[#FFE5A8]">Try to increase protein intake</span>
+                      ) : (
+                        <span>Track your macros consistently</span>
+                      )}
+                    </>
+                  ) : (
+                    <span>Set macro goals in your profile</span>
+                  )}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

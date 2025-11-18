@@ -38,8 +38,8 @@ export function BottomNavigation() {
   const pathname = usePathname();
 
   return (
-    <div className="bg-background border-t border-border shrink-0">
-      <div className="flex items-center justify-around px-2 py-2">
+    <div className="bg-black/60 backdrop-blur-xl border-t border-white/5 shrink-0">
+      <div className="flex items-center justify-around px-2 py-3 safe-area-inset-bottom">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -51,22 +51,22 @@ export function BottomNavigation() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors duration-200 min-w-0 flex-1",
+                "flex flex-col items-center gap-1.5 px-4 py-2 rounded-xl transition-all duration-200 min-w-0 flex-1 no-underline",
                 isActive
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  ? "text-[#CAFF66]"
+                  : "text-gray-400 hover:text-white hover:no-underline"
               )}
             >
               <Icon
                 className={cn(
-                  "h-4 w-4 transition-colors duration-200",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  "h-5 w-5 transition-all duration-200",
+                  isActive ? "text-[#CAFF66]" : "text-gray-400"
                 )}
               />
               <span
                 className={cn(
-                  "text-xs font-medium transition-colors duration-200 truncate",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  "text-[10px] font-semibold transition-all duration-200 truncate uppercase tracking-wide",
+                  isActive ? "text-[#CAFF66]" : "text-gray-400"
                 )}
               >
                 {item.label}

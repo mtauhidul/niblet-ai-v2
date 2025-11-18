@@ -43,80 +43,355 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* === Fitness App Dark Theme Design System ===
+   Neon lime accent with deep black backgrounds
+   High contrast, soft rounded cards
+   Pastel category tiles
+   Inter font family
+*/
+
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Radii */
+  --radius-pill: 9999px;
+  --radius-lg: 20px;
+  --radius-md: 12px;
+
+  /* Typography */
+  --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Primary Palette */
+  --color-accent: #CAFF66; /* main neon lime */
+  --color-accent-strong: #9EEA3F; /* use sparingly */
+  --color-accent-muted: #45C588; /* green action/positive */
+  --color-warn: #FF6F43; /* accent orange */
+
+  /* Neutrals / Background */
+  --bg-900: #000000; /* base */
+  --bg-800: #0B0B0B; /* panel */
+  --bg-700: #111111;
+  --surface-100: rgba(255, 255, 255, 0.05); /* dark cards with subtle transparency */
+  --muted-300: #CCCCCC;
+  --muted-400: #B3B3B3;
+  --muted-700: #333333;
+  --muted-600: #4D4D4D;
+
+  /* Pastel Tiles */
+  --tile-purple: #E8D6FF;
+  --tile-yellow: #FFF9B0;
+  --tile-orange: #FFB69B;
+  --tile-green: #9EE2C2;
+
+  /* Semantic Tokens for Shadcn Compatibility */
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --card: rgba(255, 255, 255, 0.05);
+  --card-foreground: #FFFFFF;
+  --popover: #0B0B0B;
+  --popover-foreground: #FFFFFF;
+  --primary: #CAFF66;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #FFFFFF;
+  --muted: #111111;
+  --muted-foreground: #B3B3B3;
+  --accent: #CAFF66;
+  --accent-foreground: #000000;
+  --destructive: #FF6F43;
+  --destructive-foreground: #FFFFFF;
+  --border: #333333;
+  --input: #111111;
+  --ring: #CAFF66;
+
+  /* Charts */
+  --chart-1: #CAFF66;
+  --chart-2: #9EEA3F;
+  --chart-3: #45C588;
+  --chart-4: #FF6F43;
+  --chart-5: #E8D6FF;
+
+  /* Sidebar */
+  --sidebar: #0B0B0B;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #CAFF66;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #333333;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #333333;
+  --sidebar-ring: #CAFF66;
+
+  /* Elevation */
+  --shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.6);
 }
 
+/* Light mode - Not used, dark-first approach */
+.light {
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --card: #FFFFFF;
+  --card-foreground: #000000;
+  --popover: #0B0B0B;
+  --popover-foreground: #FFFFFF;
+  --primary: #CAFF66;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #FFFFFF;
+  --muted: #111111;
+  --muted-foreground: #B3B3B3;
+  --accent: #CAFF66;
+  --accent-foreground: #000000;
+  --destructive: #FF6F43;
+  --destructive-foreground: #FFFFFF;
+  --border: #333333;
+  --input: #111111;
+  --ring: #CAFF66;
+}
+
+/* Dark mode - Fitness dark theme (primary theme) */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --card: #FFFFFF;
+  --card-foreground: #000000;
+  --popover: #0B0B0B;
+  --popover-foreground: #FFFFFF;
+  --primary: #CAFF66;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #FFFFFF;
+  --muted: #111111;
+  --muted-foreground: #B3B3B3;
+  --accent: #CAFF66;
+  --accent-foreground: #000000;
+  --destructive: #FF6F43;
+  --destructive-foreground: #FFFFFF;
+  --border: #333333;
+  --input: #111111;
+  --ring: #CAFF66;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: hsl(var(--border));
+    outline-color: hsl(var(--ring) / 0.5);
   }
+
+  /* Fitness App Typography - Inter font */
   body {
-    @apply bg-background text-foreground;
+    background: linear-gradient(180deg, rgba(22, 34, 14, 0.85) 0%, rgba(0, 0, 0, 1) 60%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: var(--foreground);
+    font-family: var(--font-primary);
+    font-weight: 400;
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Large KPI/Heading Scale */
+  h1 {
+    font-size: clamp(3rem, 10vw, 6rem); /* 48-96px responsive */
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: clamp(1.75rem, 5vw, 2.25rem); /* 28-36px */
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  h3 {
+    font-size: 1.5rem; /* 24px */
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  h4 {
+    font-size: 1.25rem; /* 20px */
+    font-weight: 600;
+  }
+
+  h5 {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 600;
+  }
+
+  h6 {
+    font-size: 1rem; /* 16px */
+    font-weight: 600;
+  }
+
+  /* Body text uses Inter */
+  p, span, a, button, input, textarea, select, label {
+    font-family: var(--font-primary);
+  }
+
+  /* Utility text sizes */
+  small, .text-small {
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .text-xs {
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  /* Buttons - Pill shaped with fitness accent */
+  .btn-primary {
+    background-color: var(--color-accent);
+    color: #000000;
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(202, 255, 102, 0.3);
+    transition: all 0.2s ease;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--color-accent-strong);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(202, 255, 102, 0.4);
+  }
+
+  .btn-secondary {
+    background-color: transparent;
+    color: var(--foreground);
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: 1rem;
+    border: 2px solid var(--muted-500);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  /* Card with soft shadow on dark */
+  .card {
+    background: var(--surface-100);
+    color: var(--foreground);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Accent pill badges */
+  .accent-pill {
+    background: var(--color-accent);
+    color: #000000;
+    font-family: var(--font-primary);
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: var(--radius-pill);
+    text-transform: uppercase;
+    font-size: 0.8125rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* Input styling - dark theme */
+  input,
+  textarea,
+  select {
+    background: var(--bg-800);
+    color: var(--foreground);
+    border: 2px solid var(--muted-600);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-primary);
+    font-weight: 400;
+    transition: all 0.2s ease;
+  }
+  
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(202, 255, 102, 0.15);
+    outline: none;
+  }
+
+  /* Sidebar icons and hover states */
+  .sidebar {
+    background: var(--sidebar);
+    color: var(--sidebar-foreground);
+    border-right: 1px solid var(--sidebar-border);
+  }
+  .sidebar .icon--active {
+    background: linear-gradient(
+      180deg,
+      rgba(227, 244, 104, 0.12),
+      rgba(145, 182, 189, 0.06)
+    );
+    color: var(--sidebar-primary-foreground);
+    box-shadow: 0 6px 18px rgba(12, 107, 126, 0.08);
+  }
+
+  /* Charts & statistics — use chart variables for consistent palette */
+  .chart-bar {
+    background: linear-gradient(180deg, var(--chart-1), var(--chart-2));
+    border-radius: 8px;
+  }
+  .chart-bar--highlight {
+    background: var(--chart-4); /* neon highlight */
+    box-shadow: 0 8px 18px rgba(227, 244, 104, 0.12);
+  }
+
+  /* small helper utilities */
+  .muted {
+    color: var(--muted-foreground);
+    background: transparent;
+  }
+  .subtle-border {
+    border: 1px solid var(--border);
+  }
+
+  /* Make sure badges / chips adopt the palette */
+  .chip {
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: linear-gradient(
+      90deg,
+      rgba(145, 182, 189, 0.08),
+      rgba(176, 202, 209, 0.04)
+    );
+    color: var(--foreground);
+  }
+
+  /* Small tweak to headings */
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--foreground);
+    letter-spacing: -0.01em;
+    font-weight: 700;
+  }
+
+  /* Links */
+  a {
+    color: var(--primary);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
   }
 }

@@ -75,20 +75,20 @@ export function ChatView({ messages, isLoading = false, loadingType = 'thinking'
   };
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <Avatar className="h-12 w-12 mb-3">
-              <AvatarFallback asChild>
-                <AIAvatar className="h-12 w-12" />
+            <Avatar className="h-14 w-14 mb-4 bg-[#CAFF66]">
+              <AvatarFallback asChild className="bg-[#CAFF66]">
+                <AIAvatar className="h-14 w-14" />
               </AvatarFallback>
             </Avatar>
-            <h3 className="font-semibold text-base mb-2">Hi! I&apos;m Niblet! 👋</h3>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              I&apos;m your friendly AI health coach. I can help you log meals, track progress, and reach your wellness goals. Upload food photos or just tell me what you ate!
+            <h3 className="font-semibold text-lg text-white mb-2">Hi! I&apos;m Niblet! 👋</h3>
+            <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+              Your AI health assistant. Log meals, track progress, and reach your goals.
             </p>
           </div>
         ) : (
@@ -107,12 +107,12 @@ export function ChatView({ messages, isLoading = false, loadingType = 'thinking'
                   {message.role === "assistant" ? (
                     <>
                       <AvatarImage src="/avatars/ai.png" alt="AI" />
-                      <AvatarFallback asChild>
+                      <AvatarFallback asChild className="bg-[#CAFF66]">
                         <AIAvatar className="h-7 w-7" />
                       </AvatarFallback>
                     </>
                   ) : (
-                    <AvatarFallback className="bg-blue-500 text-white">
+                    <AvatarFallback className="bg-white/10 text-white">
                       <User className="h-4 w-4" />
                     </AvatarFallback>
                   )}
@@ -124,11 +124,11 @@ export function ChatView({ messages, isLoading = false, loadingType = 'thinking'
                   message.role === "user" ? "items-end" : "items-start"
                 )}>
                   <div className={cn(
-                    "rounded-2xl shadow-sm",
+                    "rounded-2xl",
                     message.role === "user" 
-                      ? "bg-blue-600 text-white rounded-br-md" 
-                      : "bg-muted rounded-bl-md",
-                    message.image ? "overflow-hidden p-0" : "px-3 py-2"
+                      ? "bg-[#CAFF66] text-black rounded-br-md" 
+                      : "bg-white/5 text-white rounded-bl-md",
+                    message.image ? "overflow-hidden p-0" : "px-3 py-2.5"
                   )}>
                     {/* Image Display */}
                     {message.image && (
@@ -149,19 +149,19 @@ export function ChatView({ messages, isLoading = false, loadingType = 'thinking'
                     
                     {/* Text Content */}
                     {message.content && (
-                      <div className={cn("px-3 py-2", message.image && "pt-2")}>
+                      <div className={cn("px-3 py-2.5", message.image && "pt-2")}>
                         {message.role === "assistant" ? (
-                          <Markdown className="prose prose-xs max-w-none prose-p:my-0.5 prose-headings:my-1 text-xs">
+                          <Markdown className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-1.5 text-sm text-white prose-headings:text-white prose-strong:text-white">
                             {message.content}
                           </Markdown>
                         ) : (
-                          <p className="text-xs whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed font-medium">{message.content}</p>
                         )}
                       </div>
                     )}
                   </div>
                   <span className={cn(
-                    "text-[10px] text-muted-foreground px-1",
+                    "text-[9px] text-gray-500 px-1",
                     message.role === "user" ? "text-right" : "text-left"
                   )}>
                     {formatTime(message.timestamp)}
@@ -173,21 +173,21 @@ export function ChatView({ messages, isLoading = false, loadingType = 'thinking'
             {/* Loading Indicator */}
             {isLoading && (
               <div className="flex gap-3 items-start animate-in slide-in-from-bottom-2">
-                <Avatar className="h-7 w-7 shrink-0">
+                <Avatar className="h-7 w-7 shrink-0 bg-[#CAFF66]">
                   <AvatarImage src="/avatars/ai.png" alt="AI" />
-                  <AvatarFallback asChild>
+                  <AvatarFallback asChild className="bg-[#CAFF66]">
                     <AIAvatar className="h-7 w-7" />
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-1">
-                  <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2 shadow-sm">
-                    <div className="flex items-center gap-1">
+                  <div className="bg-white/5 rounded-2xl rounded-bl-md px-3 py-2.5">
+                    <div className="flex items-center gap-2">
                       <div className="flex gap-1">
-                        <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" />
-                        <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                        <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                       </div>
-                      <span className="text-[10px] text-muted-foreground ml-2">
+                      <span className="text-[10px] text-gray-400 font-medium">
                         {loadingType === 'logging' ? 'Logging...' : 'Thinking...'}
                       </span>
                     </div>

@@ -49,20 +49,20 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
   };
 
   return (
-    <div className="bg-background border-t">
+    <div className="border-t border-white/5 bg-black/40 backdrop-blur-xl">
       <div className="p-3">
         <form onSubmit={handleSubmit} className="relative">
-          <div className="relative flex items-end gap-2 bg-muted/30 border border-border rounded-2xl p-2 focus-within:ring-1 focus-within:ring-ring">
+          <div className="relative flex items-end gap-2 bg-white/5 border border-white/10 rounded-2xl p-2 focus-within:border-[#CAFF66]/50 transition-colors">
             {/* Attachment Button */}
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0 rounded-full hover:bg-muted shrink-0"
+              className="h-7 w-7 p-0 rounded-full hover:bg-white/10 text-gray-400 hover:text-white shrink-0 transition-colors"
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled}
             >
-              <Paperclip className="h-3.5 w-3.5" />
+              <Paperclip className="h-4 w-4" />
               <span className="sr-only">Attach file</span>
             </Button>
 
@@ -84,12 +84,12 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
               {/* Selected Image Preview */}
               {selectedImage && (
                 <div className="mb-2 relative">
-                  <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <span className="text-xs text-blue-700 dark:text-blue-300">📷 {selectedImage.name}</span>
+                  <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/10 rounded-lg">
+                    <span className="text-xs text-white">📷 {selectedImage.name}</span>
                     <button
                       type="button"
                       onClick={() => setSelectedImage(null)}
-                      className="ml-auto text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                      className="ml-auto text-gray-400 hover:text-white transition-colors"
                     >
                       ✕
                     </button>
@@ -100,9 +100,9 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
                 ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
-                placeholder={disabled ? "Niblet is responding..." : selectedImage ? "Describe this food or ask about it..." : "Ask Niblet about meals, goals, or upload food photos..."}
+                placeholder={disabled ? "Niblet is responding..." : selectedImage ? "Describe this food..." : "Ask about meals or upload photos..."}
                 className={cn(
-                  "min-h-8 max-h-20 resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground text-sm",
+                  "min-h-8 max-h-20 resize-none border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 placeholder:text-gray-500 text-sm text-white",
                   disabled && "cursor-not-allowed opacity-50"
                 )}
                 rows={1}
@@ -121,14 +121,14 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
               type="submit"
               size="sm"
               className={cn(
-                "h-7 w-7 p-0 rounded-full shrink-0 transition-all duration-200",
+                "h-8 w-8 p-0 rounded-full shrink-0 transition-all duration-200",
                 (input.trim() || selectedImage) && !disabled
-                  ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-muted text-muted-foreground cursor-not-allowed"
+                  ? "bg-[#CAFF66] hover:bg-[#CAFF66]/90 text-black"
+                  : "bg-white/5 text-gray-500 cursor-not-allowed"
               )}
               disabled={(!input.trim() && !selectedImage) || disabled}
             >
-              <Send className="h-3.5 w-3.5" />
+              <Send className="h-4 w-4" />
               <span className="sr-only">Send message</span>
             </Button>
           </div>
@@ -141,7 +141,7 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
             type="button"
             variant="outline"
             size="sm"
-            className="text-xs rounded-full whitespace-nowrap shrink-0"
+            className="text-xs rounded-full whitespace-nowrap shrink-0 bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
             onClick={() => setInput("I just ate 150g grilled chicken with 100g rice and steamed broccoli")}
             disabled={disabled}
           >
@@ -151,7 +151,7 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
             type="button"
             variant="outline"
             size="sm"
-            className="text-xs rounded-full whitespace-nowrap shrink-0"
+            className="text-xs rounded-full whitespace-nowrap shrink-0 bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
             onClick={() => setInput("My current weight is 70kg")}
             disabled={disabled}
           >
@@ -161,7 +161,7 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
             type="button"
             variant="outline"
             size="sm"
-            className="text-xs rounded-full whitespace-nowrap shrink-0"
+            className="text-xs rounded-full whitespace-nowrap shrink-0 bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
             onClick={() => setInput("How am I doing with my goals today?")}
             disabled={disabled}
           >
@@ -171,7 +171,7 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
             type="button"
             variant="outline"
             size="sm"
-            className="text-xs rounded-full whitespace-nowrap shrink-0"
+            className="text-xs rounded-full whitespace-nowrap shrink-0 bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
             onClick={() => setInput("Suggest a healthy dinner under 500 calories")}
             disabled={disabled}
           >
@@ -181,7 +181,7 @@ export default function ChatInput({ onSendMessage, disabled = false }: ChatInput
             type="button"
             variant="outline"
             size="sm"
-            className="text-xs rounded-full whitespace-nowrap shrink-0"
+            className="text-xs rounded-full whitespace-nowrap shrink-0 bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
             onClick={() => setInput("Remove my last meal")}
             disabled={disabled}
           >

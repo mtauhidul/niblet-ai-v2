@@ -19,11 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Target, Loader2, Sparkles } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { doc, updateDoc } from "firebase/firestore";
+import { Loader2, Sparkles, Target } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface GoalInput {
@@ -50,7 +50,7 @@ export function UpdateGoalsModal() {
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const { userProfile, refreshUserProfile } = useAuth();
-  
+
   const [goalInput, setGoalInput] = useState<GoalInput>({
     goalType: "",
     targetWeight: "",
@@ -66,21 +66,24 @@ export function UpdateGoalsModal() {
       let formattedDate = "";
       if (userProfile.goalTargetDate) {
         try {
-          const targetDate = userProfile.goalTargetDate instanceof Date 
-            ? userProfile.goalTargetDate 
-            : new Date(userProfile.goalTargetDate);
-          
+          const targetDate =
+            userProfile.goalTargetDate instanceof Date
+              ? userProfile.goalTargetDate
+              : new Date(userProfile.goalTargetDate);
+
           if (!isNaN(targetDate.getTime())) {
-            formattedDate = targetDate.toISOString().split('T')[0];
+            formattedDate = targetDate.toISOString().split("T")[0];
           }
         } catch (error) {
-          console.log('Error formatting target date:', error);
+          console.log("Error formatting target date:", error);
         }
       }
 
       setGoalInput({
         goalType: userProfile.goalType || "",
-        targetWeight: userProfile.targetWeight ? userProfile.targetWeight.toString() : "",
+        targetWeight: userProfile.targetWeight
+          ? userProfile.targetWeight.toString()
+          : "",
         targetDate: formattedDate,
       });
     }
@@ -99,7 +102,12 @@ export function UpdateGoalsModal() {
 
   // Calculate goals using AI
   const calculateGoalsWithAI = async () => {
-    if (!userProfile || !goalInput.goalType || !goalInput.targetWeight || !goalInput.targetDate) {
+    if (
+      !userProfile ||
+      !goalInput.goalType ||
+      !goalInput.targetWeight ||
+      !goalInput.targetDate
+    ) {
       return;
     }
 
@@ -108,128 +116,173 @@ export function UpdateGoalsModal() {
       const currentWeight = userProfile.currentWeight || 70;
       const age = userProfile.age || 25;
       const height = userProfile.height || 170;
-      const gender = userProfile.gender || 'other';
-      const activityLevel = userProfile.activityLevel || 'moderately_active';
+      const gender = userProfile.gender || "other";
+      const activityLevel = userProfile.activityLevel || "moderately_active";
+
+      const targetWeight = parseFloat(goalInput.targetWeight);
+      const weightDifference = targetWeight - currentWeight;
       
-      const weightDifference = parseFloat(goalInput.targetWeight) - currentWeight;
-      const targetDateObj = new Date(goalInput.targetDate);
+      // Validate goal type matches weight direction
+      if (goalInput.goalType === "lose_weight" && weightDifference >= 0) {
+        toast.error("Target weight must be less than current weight for weight loss goal");
+        setCalculating(false);
+        return;
+      }
+      if (goalInput.goalType === "gain_weight" && weightDifference <= 0) {
+        toast.error("Target weight must be greater than current weight for weight gain goal");
+        setCalculating(false);
+        return;
+      }
+      if (goalInput.goalType === "maintain_weight" && Math.abs(weightDifference) > 2) {
+        toast.error("Target weight should be within 2kg of current weight for maintenance");
+        setCalculating(false);
+        return;
+      }
+      // Parse date correctly to avoid timezone issues
+      const targetDateObj = new Date(goalInput.targetDate + 'T00:00:00');
       const currentDate = new Date();
-      const daysToGoal = Math.max(1, Math.ceil((targetDateObj.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)));
+      currentDate.setHours(0, 0, 0, 0); // Reset time to start of day
+      const daysToGoal = Math.max(
+        1,
+        Math.ceil(
+          (targetDateObj.getTime() - currentDate.getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      );
       const weeksToGoal = daysToGoal / 7;
+      const totalWeightChange = Math.abs(weightDifference);
+      
+      // Validate timeframe is realistic for goal
+      if (goalInput.goalType !== "maintain_weight" && totalWeightChange >= 0.5) {
+        const minWeeks = weightDifference < 0 
+          ? Math.ceil(totalWeightChange / 1.0) // Min weeks for weight loss (1kg/week max)
+          : Math.ceil(totalWeightChange / 0.5); // Min weeks for weight gain (0.5kg/week max)
+        
+        if (weeksToGoal < minWeeks) {
+          toast.error(`This goal requires at least ${minWeeks} weeks for safe and healthy progress`);
+          setCalculating(false);
+          return;
+        }
+      }
 
       // Calculate current BMI
       const currentBMI = currentWeight / Math.pow(height / 100, 2);
-      const targetBMI = parseFloat(goalInput.targetWeight) / Math.pow(height / 100, 2);
+      const targetBMI =
+        parseFloat(goalInput.targetWeight) / Math.pow(height / 100, 2);
+
+      // Calculate BMR using Mifflin-St Jeor Equation
+      let bmr;
+      if (gender === "male") {
+        bmr = 10 * currentWeight + 6.25 * height - 5 * age + 5;
+      } else if (gender === "female") {
+        bmr = 10 * currentWeight + 6.25 * height - 5 * age - 161;
+      } else {
+        bmr = 10 * currentWeight + 6.25 * height - 5 * age - 78; // average
+      }
+
+      // Activity multipliers
+      const activityMultipliers: { [key: string]: number } = {
+        sedentary: 1.2,
+        lightly_active: 1.375,
+        moderately_active: 1.55,
+        very_active: 1.725,
+        extremely_active: 1.9,
+      };
+      const activityMultiplier = activityMultipliers[activityLevel] || 1.55;
+      const tdee = bmr * activityMultiplier;
+
+      // Calculate required daily deficit/surplus
+      // 1kg of fat = ~7700 calories
       
-      // AI prompt for calculating nutritional needs
-      const aiPrompt = `
-        As a nutrition expert and health coach, calculate precise daily nutritional targets for this user's health goals:
-        
-        User Profile:
-        - Current Weight: ${currentWeight} kg
-        - Target Weight: ${goalInput.targetWeight} kg
-        - Weight Difference: ${weightDifference.toFixed(1)} kg ${weightDifference > 0 ? 'to gain' : 'to lose'}
-        - Age: ${age} years
-        - Height: ${height} cm
-        - Current BMI: ${currentBMI.toFixed(1)}
-        - Target BMI: ${targetBMI.toFixed(1)}
-        - Gender: ${gender}
-        - Activity Level: ${activityLevel.replace('_', ' ')}
-        - Goal Type: ${goalInput.goalType.replace('_', ' ')}
-        - Time Frame: ${weeksToGoal.toFixed(1)} weeks (${daysToGoal} days)
-        - Target Date: ${goalInput.targetDate}
+      let safeWeeklyChange: number;
+      let targetCalories: number;
+      
+      if (goalInput.goalType === "maintain_weight" || totalWeightChange < 0.5) {
+        // Maintenance: no weight change needed
+        safeWeeklyChange = 0;
+        targetCalories = Math.round(tdee);
+      } else if (weightDifference < 0) {
+        // Weight loss: max 1kg/week, safe is 0.5-1kg/week
+        safeWeeklyChange = Math.min(1.0, Math.max(0.5, totalWeightChange / weeksToGoal));
+        const weeklyCalorieChange = safeWeeklyChange * 7700;
+        const dailyCalorieAdjustment = weeklyCalorieChange / 7;
+        targetCalories = Math.round(tdee - dailyCalorieAdjustment);
+        // Ensure minimum calories for safety
+        const minCalories = gender === "female" ? 1200 : 1500;
+        targetCalories = Math.max(targetCalories, minCalories);
+      } else {
+        // Weight gain: max 0.5kg/week, safe is 0.25-0.5kg/week
+        safeWeeklyChange = Math.min(0.5, Math.max(0.25, totalWeightChange / weeksToGoal));
+        const weeklyCalorieChange = safeWeeklyChange * 7700;
+        const dailyCalorieAdjustment = weeklyCalorieChange / 7;
+        targetCalories = Math.round(tdee + dailyCalorieAdjustment);
+      }
 
-        Calculate and provide ONLY a JSON response with these exact fields (no additional text):
-        {
-          "weightDifference": ${Math.abs(weightDifference)},
-          "dailyCalories": [calculated daily calories based on TDEE and goal],
-          "dailyProtein": [calculated daily protein in grams based on body weight and goals],
-          "dailyCarbs": [calculated daily carbs in grams for optimal performance], 
-          "dailyFat": [calculated daily fat in grams for hormone production],
-          "dailyWater": [calculated daily water in ml based on weight and activity],
-          "recommendedWeeklyWeightChange": [safe weekly weight change in kg],
-          "estimatedTimeframe": "[realistic timeframe description]",
-          "currentBMI": ${currentBMI.toFixed(2)},
-          "targetBMI": ${targetBMI.toFixed(2)}
-        }
+      // Calculate macros
+      const protein = Math.round(currentWeight * 1.8); // 1.8g per kg
+      const fat = Math.round((targetCalories * 0.25) / 9); // 25% of calories, 9 cal/g
+      const proteinCalories = protein * 4; // 4 cal/g
+      const fatCalories = fat * 9;
+      const carbCalories = targetCalories - proteinCalories - fatCalories;
+      const carbs = Math.round(carbCalories / 4); // 4 cal/g
+      
+      // Water calculation based on weight and activity level
+      // Base: 35ml per kg + activity adjustment
+      const activityWaterBonus: { [key: string]: number } = {
+        sedentary: 0,
+        lightly_active: 250,
+        moderately_active: 500,
+        very_active: 750,
+        extremely_active: 1000,
+      };
+      const baseWater = currentWeight * 35;
+      const activityBonus = activityWaterBonus[activityLevel] || 500;
+      const water = Math.round(baseWater + activityBonus);
 
-        Consider:
-        - Safe weight loss: 0.5-1kg per week
-        - Safe weight gain: 0.25-0.5kg per week  
-        - BMR calculation based on age, gender, height, weight
-        - Activity level multiplier
-        - Protein: 1.6-2.2g per kg body weight
-        - Fat: 20-35% of total calories
-        - Carbs: remaining calories
-        - Water: 35ml per kg body weight + activity needs
-      `;
+      // Calculate estimated timeframe
+      let estimatedTimeframe: string;
+      if (goalInput.goalType === "maintain_weight" || totalWeightChange < 0.5) {
+        estimatedTimeframe = "Maintain current weight";
+      } else if (safeWeeklyChange > 0) {
+        const estimatedWeeks = Math.ceil(totalWeightChange / safeWeeklyChange);
+        estimatedTimeframe = `${estimatedWeeks} weeks to reach ${goalInput.targetWeight}kg`;
+      } else {
+        estimatedTimeframe = `${weeksToGoal.toFixed(0)} weeks to reach ${goalInput.targetWeight}kg`;
+      }
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: aiPrompt,
-          context: "nutrition_calculation"
-        }),
+      // Log calculation summary for health safety verification
+      console.log('✅ Health Goals Calculated:', {
+        goalType: goalInput.goalType,
+        currentWeight: `${currentWeight}kg`,
+        targetWeight: `${targetWeight}kg`,
+        weightChange: `${weightDifference > 0 ? '+' : ''}${weightDifference.toFixed(1)}kg`,
+        timeframe: `${daysToGoal} days (${weeksToGoal.toFixed(1)} weeks)`,
+        safeWeeklyChange: `${safeWeeklyChange.toFixed(2)}kg/week`,
+        bmr: `${Math.round(bmr)} cal`,
+        tdee: `${Math.round(tdee)} cal`,
+        targetCalories: `${targetCalories} cal`,
+        macros: `P:${protein}g | C:${carbs}g | F:${fat}g`,
+        water: `${(water/1000).toFixed(1)}L`,
+        bmi: `${currentBMI.toFixed(1)} → ${targetBMI.toFixed(1)}`
       });
 
-      const data = await response.json();
-      
-      try {
-        // Parse AI response JSON
-        const aiGoals = JSON.parse(data.response);
-        setAiResponse(aiGoals);
-      } catch (error) {
-        console.error('Error parsing AI response:', error);
-        // Fallback calculation
-        const bmr = calculateBMR(currentWeight, height, age, gender);
-        const activityMultiplier = getActivityMultiplier(activityLevel);
-        const tdee = bmr * activityMultiplier;
-        
-        const weeklyWeightChange = Math.min(0.75, Math.abs(weightDifference) / weeksToGoal);
-        const calorieAdjustment = (weightDifference < 0 ? -500 : 300) * (weeklyWeightChange / 0.5);
-        const dailyCalories = Math.round(tdee + calorieAdjustment);
-        
-        const fallbackCurrentBMI = currentWeight / Math.pow(height / 100, 2);
-        const fallbackTargetBMI = parseFloat(goalInput.targetWeight) / Math.pow(height / 100, 2);
-        
-        setAiResponse({
-          weightDifference: Math.abs(weightDifference),
-          dailyCalories,
-          dailyProtein: Math.round(currentWeight * 1.8),
-          dailyCarbs: Math.round((dailyCalories * 0.45) / 4),
-          dailyFat: Math.round((dailyCalories * 0.25) / 9),
-          dailyWater: Math.round(currentWeight * 35 + 500),
-          recommendedWeeklyWeightChange: weeklyWeightChange,
-          estimatedTimeframe: `${Math.ceil(Math.abs(weightDifference) / weeklyWeightChange)} weeks`,
-          currentBMI: Number(fallbackCurrentBMI.toFixed(2)),
-          targetBMI: Number(fallbackTargetBMI.toFixed(2))
-        });
-      }
+      // Use our calculated values directly (more accurate than AI parsing)
+      setAiResponse({
+        weightDifference: Math.abs(weightDifference),
+        dailyCalories: targetCalories,
+        dailyProtein: protein,
+        dailyCarbs: carbs,
+        dailyFat: fat,
+        dailyWater: water,
+        recommendedWeeklyWeightChange: parseFloat(safeWeeklyChange.toFixed(2)),
+        estimatedTimeframe: estimatedTimeframe,
+        currentBMI: parseFloat(currentBMI.toFixed(2)),
+        targetBMI: parseFloat(targetBMI.toFixed(2)),
+      });
     } catch (error) {
-      console.error('Error calculating goals:', error);
+      console.error("Error calculating goals:", error);
     } finally {
       setCalculating(false);
-    }
-  };
-
-  // Helper functions
-  const calculateBMR = (weight: number, height: number, age: number, gender: string) => {
-    if (gender === 'male') {
-      return 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
-    } else {
-      return 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
-    }
-  };
-
-  const getActivityMultiplier = (activityLevel: string) => {
-    switch (activityLevel) {
-      case 'sedentary': return 1.2;
-      case 'lightly_active': return 1.375;
-      case 'moderately_active': return 1.55;
-      case 'very_active': return 1.725;
-      case 'extremely_active': return 1.9;
-      default: return 1.55;
     }
   };
 
@@ -239,8 +292,8 @@ export function UpdateGoalsModal() {
 
     setLoading(true);
     try {
-      const userDoc = doc(db, 'users', userProfile.id);
-      
+      const userDoc = doc(db, "users", userProfile.id);
+
       await updateDoc(userDoc, {
         goalType: goalInput.goalType,
         targetWeight: parseFloat(goalInput.targetWeight),
@@ -256,12 +309,14 @@ export function UpdateGoalsModal() {
       });
 
       await refreshUserProfile();
-      toast.success("Goals updated successfully! Your AI-calculated nutrition plan is now active.");
+      toast.success(
+        "Goals updated successfully! Your AI-calculated nutrition plan is now active."
+      );
       setOpen(false);
       setAiResponse(null);
       // Don't clear the form - it will repopulate with the updated values when reopened
     } catch (error) {
-      console.error('Error updating goals:', error);
+      console.error("Error updating goals:", error);
       toast.error("Failed to update goals. Please try again.");
     } finally {
       setLoading(false);
@@ -269,26 +324,33 @@ export function UpdateGoalsModal() {
   };
 
   const updateGoalInput = (field: keyof GoalInput, value: string) => {
-    setGoalInput(prev => ({ ...prev, [field]: value }));
+    setGoalInput((prev) => ({ ...prev, [field]: value }));
   };
 
   const getTomorrowDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return tomorrow.toISOString().split("T")[0];
   };
 
-  const canCalculate = goalInput.goalType && goalInput.targetWeight && goalInput.targetDate;
+  const canCalculate =
+    goalInput.goalType && goalInput.targetWeight && goalInput.targetDate;
   const hasExistingGoals = userProfile?.goalType && userProfile?.targetWeight;
   const buttonText = hasExistingGoals ? "Update Goals" : "Create Goals";
-  const dialogTitle = hasExistingGoals ? "Update Health Goals" : "Create Health Goals";
+  const dialogTitle = hasExistingGoals
+    ? "Update Health Goals"
+    : "Create Health Goals";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center gap-2">
-          <Target className="h-4 w-4" />
-          {buttonText}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex items-center gap-2 bg-[#CAFF66] text-black border-[#CAFF66] hover:bg-[#CAFF66]/90 hover:text-black h-8 px-4 font-medium"
+        >
+          <Target className="h-3.5 w-3.5" />
+          <span className="text-xs">{buttonText}</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="w-[90vw] max-w-[420px] max-h-[85vh] overflow-y-auto p-4">
@@ -298,18 +360,19 @@ export function UpdateGoalsModal() {
             {dialogTitle}
           </DialogTitle>
           <DialogDescription className="text-sm">
-            {hasExistingGoals 
+            {hasExistingGoals
               ? "Your current goals are pre-filled below. Update them and let AI recalculate personalized nutrition targets."
-              : "Set your first goal and let AI calculate personalized nutrition targets"
-            }
+              : "Set your first goal and let AI calculate personalized nutrition targets"}
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Step 1: Goal Input */}
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="goalType" className="text-sm font-medium">Goal Type *</Label>
+              <Label htmlFor="goalType" className="text-sm font-medium">
+                Goal Type *
+              </Label>
               <Select
                 value={goalInput.goalType}
                 onValueChange={(value) => updateGoalInput("goalType", value)}
@@ -321,7 +384,9 @@ export function UpdateGoalsModal() {
                 <SelectContent>
                   <SelectItem value="weight_loss">🔥 Weight Loss</SelectItem>
                   <SelectItem value="weight_gain">💪 Weight Gain</SelectItem>
-                  <SelectItem value="maintain_weight">⚖️ Maintain Weight</SelectItem>
+                  <SelectItem value="maintain_weight">
+                    ⚖️ Maintain Weight
+                  </SelectItem>
                   <SelectItem value="muscle_gain">🏋️ Muscle Gain</SelectItem>
                 </SelectContent>
               </Select>
@@ -329,25 +394,34 @@ export function UpdateGoalsModal() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="targetWeight" className="text-sm font-medium">Target Weight (kg) *</Label>
+                <Label htmlFor="targetWeight" className="text-sm font-medium">
+                  Target Weight (kg) *
+                </Label>
                 <Input
                   id="targetWeight"
                   type="number"
                   step="0.1"
                   placeholder="70.0"
                   value={goalInput.targetWeight}
-                  onChange={(e) => updateGoalInput("targetWeight", e.target.value)}
+                  onChange={(e) =>
+                    updateGoalInput("targetWeight", e.target.value)
+                  }
                   required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="targetDate" className="text-sm font-medium">Target Date *</Label>
+                <Label htmlFor="targetDate" className="text-sm font-medium">
+                  Target Date *
+                </Label>
                 <Input
                   id="targetDate"
                   type="date"
                   min={getTomorrowDate()}
                   value={goalInput.targetDate}
-                  onChange={(e) => updateGoalInput("targetDate", e.target.value)}
+                  onChange={(e) =>
+                    updateGoalInput("targetDate", e.target.value)
+                  }
+                  className="[&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:invert"
                   required
                 />
               </div>
@@ -382,73 +456,91 @@ export function UpdateGoalsModal() {
 
           {/* Step 2: AI Results */}
           {aiResponse && (
-            <div className="space-y-3 p-3 rounded-lg bg-linear-to-r from-emerald-50/80 to-blue-50/80 dark:from-emerald-950/30 dark:to-blue-950/30 border border-emerald-200/50 dark:border-emerald-800/50">
+            <div className="space-y-3 p-3 rounded-lg bg-muted/30 border">
               <div className="flex items-center gap-2 mb-3">
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50">
-                  <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10">
+                  <Sparkles className="h-3 w-3 text-primary" />
                 </div>
-                <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                <h3 className="text-sm font-semibold text-foreground">
                   AI Nutrition Plan
                 </h3>
               </div>
-              
+
               {/* Main Targets - Highlighted */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-                <div className="bg-white/70 dark:bg-gray-900/50 rounded-lg p-2 border">
+                <div className="bg-card rounded-lg p-2 border">
                   <div className="text-center">
-                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    <div className="text-lg font-bold text-primary">
                       {aiResponse.dailyCalories}
                     </div>
-                    <div className="text-xs text-muted-foreground">Daily Calories</div>
+                    <div className="text-xs text-muted-foreground">
+                      Daily Calories
+                    </div>
                   </div>
                 </div>
-                <div className="bg-white/70 dark:bg-gray-900/50 rounded-lg p-2 border">
+                <div className="bg-card rounded-lg p-2 border">
                   <div className="text-center">
-                    <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                    <div className="text-lg font-bold text-secondary">
                       {aiResponse.weightDifference.toFixed(1)}kg
                     </div>
-                    <div className="text-xs text-muted-foreground">Weight Goal</div>
+                    <div className="text-xs text-muted-foreground">
+                      Weight Goal
+                    </div>
                   </div>
                 </div>
-                <div className="bg-white/70 dark:bg-gray-900/50 rounded-lg p-2 border">
+                <div className="bg-card rounded-lg p-2 border">
                   <div className="text-center">
-                    <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                    <div className="text-lg font-bold text-primary">
                       {aiResponse.recommendedWeeklyWeightChange.toFixed(1)}kg
                     </div>
-                    <div className="text-xs text-muted-foreground">Per Week</div>
+                    <div className="text-xs text-muted-foreground">
+                      Per Week
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Macros - Compact Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="bg-white/50 dark:bg-gray-900/30 rounded p-2 text-center">
-                  <div className="font-semibold text-green-600 dark:text-green-400">{aiResponse.dailyProtein}g</div>
+                <div className="bg-muted/30 rounded p-2 text-center">
+                  <div className="font-semibold text-primary">
+                    {aiResponse.dailyProtein}g
+                  </div>
                   <div className="text-muted-foreground">Protein</div>
                 </div>
-                <div className="bg-white/50 dark:bg-gray-900/30 rounded p-2 text-center">
-                  <div className="font-semibold text-yellow-600 dark:text-yellow-400">{aiResponse.dailyCarbs}g</div>
+                <div className="bg-muted/30 rounded p-2 text-center">
+                  <div className="font-semibold text-secondary">
+                    {aiResponse.dailyCarbs}g
+                  </div>
                   <div className="text-muted-foreground">Carbs</div>
                 </div>
-                <div className="bg-white/50 dark:bg-gray-900/30 rounded p-2 text-center">
-                  <div className="font-semibold text-red-600 dark:text-red-400">{aiResponse.dailyFat}g</div>
+                <div className="bg-muted/30 rounded p-2 text-center">
+                  <div className="font-semibold text-primary">
+                    {aiResponse.dailyFat}g
+                  </div>
                   <div className="text-muted-foreground">Fat</div>
                 </div>
-                <div className="bg-white/50 dark:bg-gray-900/30 rounded p-2 text-center">
-                  <div className="font-semibold text-cyan-600 dark:text-cyan-400">{(aiResponse.dailyWater / 1000).toFixed(1)}L</div>
+                <div className="bg-background/50 rounded p-2 text-center">
+                  <div className="font-semibold text-cyan-600 dark:text-cyan-400">
+                    {(aiResponse.dailyWater / 1000).toFixed(1)}L
+                  </div>
                   <div className="text-muted-foreground">Water</div>
                 </div>
               </div>
 
               {/* BMI & Timeline - Bottom Row */}
               <div className="flex flex-wrap gap-2 text-xs">
-                <div className="flex-1 min-w-0 bg-white/40 dark:bg-gray-900/20 rounded px-2 py-1">
+                <div className="flex-1 min-w-0 bg-background/40 rounded px-2 py-1">
                   <span className="text-muted-foreground">BMI:</span>{" "}
-                  <span className="font-medium">{aiResponse.currentBMI} → {aiResponse.targetBMI}</span>
+                  <span className="font-medium">
+                    {aiResponse.currentBMI} → {aiResponse.targetBMI}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0 bg-white/40 dark:bg-gray-900/20 rounded px-2 py-1">
+                <div className="flex-1 min-w-0 bg-background/40 rounded px-2 py-1">
                   <span className="text-muted-foreground">Timeline:</span>{" "}
-                  <span className="font-medium">{aiResponse.estimatedTimeframe}</span>
+                  <span className="font-medium">
+                    {aiResponse.estimatedTimeframe}
+                  </span>
                 </div>
               </div>
             </div>
@@ -457,8 +549,11 @@ export function UpdateGoalsModal() {
           {/* Current Profile Info */}
           {userProfile && (
             <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-              <strong>Current Profile:</strong> {userProfile.currentWeight || '--'}kg, {userProfile.height || '--'}cm, 
-              {userProfile.age || '--'} years, {userProfile.gender || 'not set'}, {userProfile.activityLevel?.replace('_', ' ') || 'not set'}
+              <strong>Current Profile:</strong>{" "}
+              {userProfile.currentWeight || "--"}kg,{" "}
+              {userProfile.height || "--"}cm,
+              {userProfile.age || "--"} years, {userProfile.gender || "not set"}
+              , {userProfile.activityLevel?.replace("_", " ") || "not set"}
             </div>
           )}
 
@@ -469,7 +564,11 @@ export function UpdateGoalsModal() {
               onClick={() => {
                 setOpen(false);
                 setAiResponse(null);
-                setGoalInput({ goalType: "", targetWeight: "", targetDate: "" });
+                setGoalInput({
+                  goalType: "",
+                  targetWeight: "",
+                  targetDate: "",
+                });
               }}
               disabled={loading}
             >
@@ -481,8 +580,10 @@ export function UpdateGoalsModal() {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {hasExistingGoals ? "Updating Goals..." : "Creating Goals..."}
                 </>
+              ) : hasExistingGoals ? (
+                "Update Goals"
               ) : (
-                hasExistingGoals ? "Update Goals" : "Create Goals"
+                "Create Goals"
               )}
             </Button>
           </DialogFooter>

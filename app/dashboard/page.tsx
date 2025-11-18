@@ -2,18 +2,12 @@
 
 import ChatInput from "@/components/chat-input";
 import { ChatView } from "@/components/chat-view";
-import { DashboardHeader } from "@/components/dashboard-header";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/contexts/UserContext";
 import { useChat } from "@/contexts/ChatContext";
 import { useMemo } from "react";
-import { RefreshCw } from "lucide-react";
-
-
-
-
+import { Flame, Target, TrendingUp, RefreshCw } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 export default function Dashboard() {
   const { userProfile } = useAuth();
@@ -22,9 +16,14 @@ export default function Dashboard() {
 
   // Calculate daily calorie progress
   const progressData = useMemo(() => {
-    if (!userProfile) return { progress: 0, message: "No data available" };
+    if (!userProfile) return { 
+      progress: 0, 
+      consumedCalories: 0, 
+      targetCalories: 2000, 
+      remaining: 2000 
+    };
 
-    const targetCalories = userProfile.targetCalories || 2000; // Default to 2000 if not set
+    const targetCalories = userProfile.targetCalories || 2000;
     
     // Get today's meals
     const today = new Date();
@@ -42,60 +41,89 @@ export default function Dashboard() {
 
     return {
       progress: Math.round(progress),
-      message: remaining > 0 ? `${remaining} cal remaining` : "Target reached!",
       consumedCalories: Math.round(consumedCalories),
       targetCalories,
       remaining: Math.round(remaining),
     };
   }, [userProfile, mealLogs]);
 
-  // Add a new session button to the header
   const handleNewSession = () => {
     startNewSession();
   };
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header - fixed height */}
-      <div className="px-4 py-3 border-b bg-background/95 backdrop-blur">
-        <DashboardHeader
-          title="Dashboard"
-          description="Your health journey at a glance"
-        />
+      {/* Header - Minimal with Logo */}
+      <div className="px-4 py-3 border-b border-white/5">
+        <div className="flex items-center justify-between">
+          <Logo size="md" showText={true} href="/dashboard" />
+          <button
+            onClick={handleNewSession}
+            className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+          >
+            <RefreshCw className="h-3 w-3" />
+            New Chat
+          </button>
+        </div>
       </div>
 
-      {/* Main content - flexible height */}
+      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Progress Overview - compact */}
-        <div className="px-4 py-3 border-b bg-background">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold">Progress</h3>
-            <span className="text-xs text-muted-foreground">
-              {dataLoading ? "Loading..." : progressData.message}
-            </span>
-          </div>
-          <Progress value={progressData.progress} className="h-2" />
-          {progressData.consumedCalories !== undefined && progressData.targetCalories && (
-            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>Consumed: {progressData.consumedCalories} cal</span>
-              <span>Target: {progressData.targetCalories} cal</span>
+        {/* KPI Cards - Ultra Compact */}
+        <div className="px-3 py-2 border-b border-white/5">
+          <div className="grid grid-cols-3 gap-1.5 mb-2">
+            
+            {/* Consumed Calories */}
+            <div className="card p-2">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Flame className="h-3 w-3 text-[#CAFF66]" strokeWidth={2.5} />
+                <div className="text-[9px] text-gray-500 uppercase tracking-wide">In</div>
+              </div>
+              <div className="text-lg font-bold text-white leading-tight">
+                {dataLoading ? "..." : progressData.consumedCalories}
+              </div>
             </div>
-          )}
+
+            {/* Target Calories */}
+            <div className="card p-2">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Target className="h-3 w-3 text-[#FFE5A8]" strokeWidth={2.5} />
+                <div className="text-[9px] text-gray-500 uppercase tracking-wide">Goal</div>
+              </div>
+              <div className="text-lg font-bold text-white leading-tight">
+                {progressData.targetCalories}
+              </div>
+            </div>
+
+            {/* Remaining Calories */}
+            <div className="card p-2">
+              <div className="flex items-center gap-1 mb-0.5">
+                <TrendingUp className="h-3 w-3 text-[#C8A8FF]" strokeWidth={2.5} />
+                <div className="text-[9px] text-gray-500 uppercase tracking-wide">Left</div>
+              </div>
+              <div className="text-lg font-bold text-white leading-tight">
+                {dataLoading ? "..." : progressData.remaining}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Progress Bar - Ultra Compact */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-[#CAFF66] transition-all duration-500 rounded-full"
+                style={{ width: `${progressData.progress}%` }}
+              />
+            </div>
+            <span className="text-[9px] font-semibold text-gray-500 min-w-7 text-right">{progressData.progress}%</span>
+          </div>
         </div>
 
-        {/* Chat Section - takes remaining space */}
+        {/* Chat Section */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-4 py-2 border-b flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Niblet AI Assistant</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleNewSession}
-              className="text-xs h-7 px-2"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              New Session
-            </Button>
+          <div className="px-4 py-3 border-b border-white/5">
+            <h3 className="text-sm font-semibold text-white">Niblet AI</h3>
           </div>
 
           <div className="flex-1 flex flex-col overflow-hidden">

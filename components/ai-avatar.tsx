@@ -10,11 +10,11 @@ export function AIAvatar({ className }: AIAvatarProps) {
   
   return (
     <div className={cn(
-      "flex items-center justify-center bg-blue-600 rounded-full",
+      "flex items-center justify-center bg-primary rounded-full",
       className
     )}>
       <Bot className={cn(
-        "text-white",
+        "text-primary-foreground",
         isLarge ? "h-8 w-8" : "h-4 w-4"
       )} />
     </div>
