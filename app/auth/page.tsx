@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Shield, Sparkles, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Logo } from "@/components/logo";
@@ -57,7 +57,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Navigation - Same as home */}
+      {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-black/60 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
@@ -70,7 +70,7 @@ export default function AuthPage() {
         </div>
       </nav>
 
-      {/* Auth Content - Centered */}
+      {/* Auth Content */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 pt-24 pb-16">
         <div className="w-full max-w-md">
           
@@ -82,10 +82,10 @@ export default function AuthPage() {
           {/* Card */}
           <div className="card p-8">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-white mb-2">
+              <h1 className="text-3xl font-bold text-white mb-3">
                 Welcome
               </h1>
-              <p className="text-sm text-gray-400">
+              <p className="text-gray-400">
                 Sign in to track your health goals
               </p>
             </div>
@@ -94,7 +94,7 @@ export default function AuthPage() {
             <button
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="w-full bg-white hover:bg-gray-100 text-black font-semibold py-3 px-6 rounded-full transition-all flex items-center justify-center gap-3 disabled:opacity-50 text-sm"
+              className="w-full bg-white hover:bg-gray-100 text-black font-semibold py-3.5 px-6 rounded-full transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -116,6 +116,18 @@ export default function AuthPage() {
               </svg>
               {loading ? "Signing in..." : "Continue with Google"}
             </button>
+
+            {/* Trust Indicators */}
+            <div className="flex items-center justify-center gap-4 mt-6 text-xs text-gray-500">
+              <div className="flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5 text-[#CAFF66]" />
+                <span>Secure</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-[#CAFF66]" />
+                <span>AI-Powered</span>
+              </div>
+            </div>
 
             {/* Terms */}
             <p className="text-xs text-gray-500 text-center mt-6">
